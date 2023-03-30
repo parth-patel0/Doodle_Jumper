@@ -11,6 +11,6 @@ public class main_plattform {
         this.yPos = yPos;
         this.len = len;
         this.height = height;
-        parth ist gay
+        int gayparth = 1;
     }
 }
