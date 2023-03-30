@@ -1,8 +1,5 @@
 package com.example.wappler_jumper;
 
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-
 public class main_plattform {
     private int xPos;
     private int yPos;
@@ -14,11 +11,6 @@ public class main_plattform {
         this.yPos = yPos;
         this.len = len;
         this.height = height;
-
-        Rectangle plattform = new Rectangle(xPos, yPos);
-        plattform.setArcHeight(height);
-        plattform.setArcWidth(len);
-        plattform.setFill(Color.ANTIQUEWHITE);
-
+        parth ist gay
     }
 }
