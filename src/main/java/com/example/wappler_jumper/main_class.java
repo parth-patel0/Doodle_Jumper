@@ -77,8 +77,13 @@ public class main_class extends Application {
     private void startGame() {
         Stage map = new Stage();
         map.setTitle("Wappler-Jumper");
-        Scene playScene = new Scene(new VBox(), 700, 700);
+        VBox box = new VBox();
+        Scene playScene = new Scene(box, 700, 700);
         map.setScene(playScene);
+        for (int i = 0; i < 10; i++) {
+
+        }
+
         map.show();
     }
 
