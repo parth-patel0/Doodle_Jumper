@@ -1,24 +1,20 @@
 package com.example.wappler_jumper;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.MoveTo;
-import javafx.scene.shape.Path;
-import javafx.scene.shape.QuadCurveTo;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.time.Duration;
+import java.util.Collection;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class main_class extends Application {
 
@@ -27,9 +23,7 @@ public class main_class extends Application {
         stage.setTitle("Welcome to Wappler Jumper!");
         /*
         * TODO
-        *  main-start Fenster
-        *       * title "Wappler Jumper"
-        *       * play Button
+        *   Plattformen haben von sich selber ein Min Abstand von 50 Pixel
         * */
 
         //basic alignment
@@ -77,13 +71,19 @@ public class main_class extends Application {
     private void startGame() {
         Stage map = new Stage();
         map.setTitle("Wappler-Jumper");
-        VBox box = new VBox();
-        Scene playScene = new Scene(box, 700, 700);
-        map.setScene(playScene);
-        for (int i = 0; i < 10; i++) {
+        Pane pane = new Pane();
+        Random randomPos = new Random();
 
+        for (int i = 0; i < 50; i++) {
+            int xPos = randomPos.nextInt(700);
+            int yPos = randomPos.nextInt(700);
+
+            Plattform plattform = new Plattform(xPos, yPos, 80, 20);
+            pane.getChildren().add(plattform);
         }
 
+        Scene playScene = new Scene(pane, 700, 700);
+        map.setScene(playScene);
         map.show();
     }
 
