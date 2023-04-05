@@ -24,7 +24,7 @@ public class main_class extends Application {
         stage.setTitle("Welcome to Wappler Jumper!");
         /*
         * TODO
-        *   spieler einfügen
+        *   spieler einfügen mit funktionen
         *   plattformen so programmieren, dass wenn man springt, man auf den plattformen stehen bleibt
         *   spezielle plattformen die von der Plattform klasse erben
         * */
