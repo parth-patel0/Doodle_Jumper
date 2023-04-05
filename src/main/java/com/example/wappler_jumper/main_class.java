@@ -24,8 +24,9 @@ public class main_class extends Application {
         stage.setTitle("Welcome to Wappler Jumper!");
         /*
         * TODO
-        *   in vbox mehrere hboxen
-        *   in einer hbox 2 plattformen mit zufälligen x und y werten
+        *   spieler einfügen
+        *   plattformen so programmieren, dass wenn man springt, man auf den plattformen stehen bleibt
+        *   spezielle plattformen die von der Plattform klasse erben
         * */
 
         //basic alignment
@@ -79,7 +80,7 @@ public class main_class extends Application {
         //allPlattforms.setStyle("-fx-border-color: red; -fx-border-width: 1px;");
         VBox.setVgrow(allPlattforms, Priority.ALWAYS);
         HBox score = new HBox();
-        score.setPrefHeight(60);
+        score.setPrefHeight(80);
         score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
         //score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
         allPlattforms.getChildren().add(score);
@@ -94,11 +95,17 @@ public class main_class extends Application {
             allPlattforms.getChildren().add(container);
             container.setLayoutX(0);
             container.setLayoutY(0);
+            int prevX = 1;
 
-            int xPos = randomPos.nextInt(610);
-            int yPos = randomPos.nextInt(70);
-            Plattform plattform = new Plattform(xPos, yPos, 80, 20);
-            container.getChildren().add(plattform);
+            for (int j = 0; j < 2; j++) {
+                int xPos = randomPos.nextInt(610) + prevX;
+                prevX = (xPos + 81 > 610 ? 10 : xPos + 81);
+                int yPos = randomPos.nextInt(10, 70);
+                Plattform plattform = new Plattform(xPos, yPos, 80, 20);
+                container.getChildren().add(plattform);
+            }
+
+            prevX = 0;
         }
 
         Scene playScene = new Scene(allPlattforms, 700, 700);
@@ -107,6 +114,6 @@ public class main_class extends Application {
     }
 
     public static void main(String[] args) {
-        launch();
+        launch(args);
     }
 }
