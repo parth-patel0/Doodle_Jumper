@@ -1,6 +1,8 @@
 package com.example.wappler_jumper;
 
+import javafx.scene.Node;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
@@ -18,12 +20,12 @@ public class Plattform extends Pane {
         this.height = height;
 
         Rectangle rect = new Rectangle(len, height);
-        rect.setLayoutX(xPos);
-        rect.setLayoutY(yPos);
+        rect.setX(xPos);
+        rect.setY(yPos);
         rect.setArcWidth(10);
         rect.setArcHeight(10);
         rect.setFill(Color.LIGHTBLUE);
+
         getChildren().add(rect);
     }
-
 }

@@ -7,8 +7,9 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -23,7 +24,8 @@ public class main_class extends Application {
         stage.setTitle("Welcome to Wappler Jumper!");
         /*
         * TODO
-        *   Plattformen haben von sich selber ein Min Abstand von 50 Pixel
+        *   in vbox mehrere hboxen
+        *   in einer hbox 2 plattformen mit zufälligen x und y werten
         * */
 
         //basic alignment
@@ -71,18 +73,35 @@ public class main_class extends Application {
     private void startGame() {
         Stage map = new Stage();
         map.setTitle("Wappler-Jumper");
-        Pane pane = new Pane();
+
         Random randomPos = new Random();
+        VBox allPlattforms = new VBox();
+        //allPlattforms.setStyle("-fx-border-color: red; -fx-border-width: 1px;");
+        VBox.setVgrow(allPlattforms, Priority.ALWAYS);
+        HBox score = new HBox();
+        score.setPrefHeight(60);
+        score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+        //score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
+        allPlattforms.getChildren().add(score);
 
-        for (int i = 0; i < 50; i++) {
-            int xPos = randomPos.nextInt(700);
-            int yPos = randomPos.nextInt(700);
+        for (int i = 0; i < 7; i++) {
+            Pane container = new Pane();
 
+            container.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
+
+            container.setPrefHeight(100);
+            container.setPrefWidth(700);
+            allPlattforms.getChildren().add(container);
+            container.setLayoutX(0);
+            container.setLayoutY(0);
+
+            int xPos = randomPos.nextInt(610);
+            int yPos = randomPos.nextInt(70);
             Plattform plattform = new Plattform(xPos, yPos, 80, 20);
-            pane.getChildren().add(plattform);
+            container.getChildren().add(plattform);
         }
 
-        Scene playScene = new Scene(pane, 700, 700);
+        Scene playScene = new Scene(allPlattforms, 700, 700);
         map.setScene(playScene);
         map.show();
     }
