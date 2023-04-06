@@ -3,25 +3,21 @@ package com.example.wappler_jumper;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class main_class extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        stage.setTitle("Welcome to Wappler Jumper!");
+        stage.setTitle("Welcome to Ninja Jumper!");
         /*
         * TODO
         *   spieler einfügen mit funktionen
@@ -36,7 +32,7 @@ public class main_class extends Application {
         menu.setSpacing(200);
 
         //title + curve style
-        Label title = new Label("Wappler Jumper");
+        Label title = new Label("Ninja Jumper");
         title.setStyle("-fx-text-fill: #000000; " +
                 "-fx-font-size: 40px; " +
                 "-fx-font-weight: bold; " +
@@ -73,18 +69,19 @@ public class main_class extends Application {
 
     private void startGame() {
         Stage map = new Stage();
-        map.setTitle("Wappler-Jumper");
+        map.setTitle("Ninja-Jumper");
 
+        //creating random Number for the xPos of the platform
         Random randomPos = new Random();
-        VBox allPlattforms = new VBox();
-        //allPlattforms.setStyle("-fx-border-color: red; -fx-border-width: 1px;");
-        VBox.setVgrow(allPlattforms, Priority.ALWAYS);
+        VBox allPlatforms = new VBox();
+        VBox.setVgrow(allPlatforms, Priority.ALWAYS);
+        //top part of vbox for the score and settings
         HBox score = new HBox();
         score.setPrefHeight(80);
         score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
-        //score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-        allPlattforms.getChildren().add(score);
+        allPlatforms.getChildren().add(score);
 
+        //creating random platforms with x and y positions
         for (int i = 0; i < 7; i++) {
             Pane container = new Pane();
 
@@ -92,23 +89,24 @@ public class main_class extends Application {
 
             container.setPrefHeight(100);
             container.setPrefWidth(700);
-            allPlattforms.getChildren().add(container);
+            allPlatforms.getChildren().add(container);
             container.setLayoutX(0);
             container.setLayoutY(0);
-            int prevX = 1;
-
+            int max = 610, min = 10;
+            //creating 2 platforms on each pane
             for (int j = 0; j < 2; j++) {
-                int xPos = randomPos.nextInt(610) + prevX;
-                prevX = (xPos + 81 > 610 ? 10 : xPos + 81);
+                int xPos = randomPos.nextInt(max - min + 1) + min;
                 int yPos = randomPos.nextInt(10, 70);
-                Plattform plattform = new Plattform(xPos, yPos, 80, 20);
-                container.getChildren().add(plattform);
+                Platform platform = new Platform(xPos, yPos, 80, 20);
+                container.getChildren().add(platform);
+                max = (xPos + 100 > 545 ? 388 : 610);
+                min = (xPos + 100 < 498 ? 433 : 10);
             }
 
-            prevX = 0;
         }
 
-        Scene playScene = new Scene(allPlattforms, 700, 700);
+        //create scene
+        Scene playScene = new Scene(allPlatforms, 700, 700);
         map.setScene(playScene);
         map.show();
     }
