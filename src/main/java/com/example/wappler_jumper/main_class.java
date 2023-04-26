@@ -1,5 +1,8 @@
 package com.example.wappler_jumper;
 
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -9,8 +12,11 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class main_class extends Application {
@@ -19,11 +25,11 @@ public class main_class extends Application {
     public void start(Stage stage) throws IOException {
         stage.setTitle("Welcome to Ninja Jumper!");
         /*
-        * TODO
-        *   spieler einfügen mit funktionen
-        *   plattformen so programmieren, dass wenn man springt, man auf den plattformen stehen bleibt
-        *   spezielle plattformen die von der Plattform klasse erben
-        * */
+         * TODO
+         *   spieler einfügen mit funktionen
+         *   plattformen so programmieren, dass wenn man springt, man auf den plattformen stehen bleibt
+         *   spezielle plattformen die von der Plattform klasse erben
+         * */
 
         //basic alignment
         VBox menu = new VBox();
@@ -57,7 +63,8 @@ public class main_class extends Application {
                 "-fx-cursor: hand;");
         playButton.setOnAction(actionEvent -> {
             stage.close();
-            startGame();
+            //startGame(); --> first version with several panes
+            play();
         });
 
         menu.getChildren().addAll(title, playButton);
@@ -65,6 +72,78 @@ public class main_class extends Application {
         Scene mainMenu = new Scene(menu, 700, 700);
         stage.setScene(mainMenu);
         stage.show();
+    }
+
+    private void play() {
+        Stage map = new Stage();
+        map.setTitle("Ninja-Jumper");
+
+        //creating random Number for the xPos of the platform
+        Random randomPos = new Random();
+        int numPlatforms = 13;
+        Pane gamePane = new Pane();
+
+
+        //top part of vbox for the score and settings
+        HBox score = new HBox();
+        score.setPrefHeight(80);
+        score.setPrefWidth(700);
+        score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+        score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
+        gamePane.getChildren().add(score);
+
+        List<Platform> fixPlatforms = new ArrayList<>();
+        List<MovingPlatform> randomPlatforms = new ArrayList<>();
+        //creating fix platforms
+        Platform fixP1 = new Platform(150, 620, 80, 20);
+        fixPlatforms.add(fixP1);
+        Platform fixP2 = new Platform(310, 500, 80, 20);
+        fixPlatforms.add(fixP2);
+        Platform fixP3 = new Platform(450, 390, 80, 20);
+        fixPlatforms.add(fixP3);
+        Platform fixP4 = new Platform(136, 280, 80, 20);
+        fixPlatforms.add(fixP4);
+        Platform fixP5 = new Platform(330, 170, 80, 20);
+        fixPlatforms.add(fixP5);
+
+        //creating random platforms
+        for (int i = 0; i < fixPlatforms.size(); i++) {
+            //random x & y pos of the platform + lenght & height
+            int xPosFix = fixPlatforms.get(i).getxPos();
+            int xPos;
+            if (xPosFix < 350) {
+                xPos = randomPos.nextInt(621 - xPosFix - 100 + 1) + xPosFix + 100; //random xPos from xPosFix + 100 to 621
+            } else {
+                xPos = randomPos.nextInt(xPosFix - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
+            }
+            int yPos = fixPlatforms.get(i).getyPos() - 30;
+            int lenght = 80;
+            int height = 20;
+            //int dir = (i % 2 == 0 ? 1 : -1);
+            MovingPlatform newPlatform = new MovingPlatform(xPos, yPos, lenght, height, 1);
+            newPlatform.move();
+            randomPlatforms.add(newPlatform);
+
+        }
+
+        //adding fix and random platforms in the pane
+        gamePane.getChildren().addAll(fixPlatforms);
+        gamePane.getChildren().addAll(randomPlatforms);
+
+        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(16), event -> {
+            // Update the platforms by calling the move method
+            for (MovingPlatform movingPlatform : randomPlatforms) {
+                movingPlatform.move();
+            }
+        }));
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
+
+        // create scene
+        Scene playScene = new Scene(gamePane, 700, 700);
+        map.setScene(playScene);
+        map.show();
+
     }
 
     private void startGame() {
@@ -97,6 +176,7 @@ public class main_class extends Application {
             for (int j = 0; j < 2; j++) {
                 int xPos = randomPos.nextInt(max - min + 1) + min;
                 int yPos = randomPos.nextInt(10, 70);
+
                 Platform platform = new Platform(xPos, yPos, 80, 20);
                 container.getChildren().add(platform);
                 max = (xPos + 100 > 545 ? 388 : 610);
