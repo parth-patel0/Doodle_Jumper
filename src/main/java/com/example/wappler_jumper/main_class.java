@@ -1,6 +1,7 @@
 package com.example.wappler_jumper;
 
 import javafx.animation.Animation;
+import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
@@ -9,6 +10,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -20,6 +23,28 @@ import java.util.List;
 import java.util.Random;
 
 public class main_class extends Application {
+    //Güler
+    Pane gamePane = new Pane();
+    Scene playScene = new Scene(gamePane, 700, 700);
+    //Bilder
+    static Image ninjaN = new Image("ninja_jumper_normal.png");
+    Image ninjanL = new Image("ninja_jumper_links.png");
+    Image ninjaR = new Image("ninja_jumper_rechts.png");
+    static ImageView ninjanormal = new ImageView(ninjaN);
+    ImageView ninjalinks = new ImageView(ninjanL);
+    ImageView ninjarechts = new ImageView(ninjaR);
+    static final int[] x = {300};
+    static final int[] y = {600};
+    private static double xVel = 0;
+    private static double yVel = 0;
+    private static int jumpingpoint;
+    private static boolean executed = false;
+    private static double gravity = 0.5;
+    private static int counter = 0;
+    private static boolean jumping = true;
+    private static boolean falling;
+    private static boolean dead = false;
+    //Güler
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -75,13 +100,41 @@ public class main_class extends Application {
     }
 
     private void play() {
+        //Güler
+        //ninjanormal.isVisible();
+        ninjalinks.setVisible(false);
+        ninjarechts.setVisible(false);
+        boolean playerdead = false;
+        //Güler
+
         Stage map = new Stage();
         map.setTitle("Ninja-Jumper");
+
+        //Güler
+        //Animation
+        AnimationTimer timer = new AnimationTimer() {
+            @Override
+            public void handle(long l) {
+                update();
+                //yVel += gravity;
+                if (y[0] > 700) {
+                    dead = true;
+                }else dead = false;
+                if (dead) {
+                    System.out.println("Gameover");
+                    //gameover
+                }
+                x[0] += xVel;
+                y[0] += yVel;
+                ninjanormal.relocate(x[0], y[0]);
+            }
+        };
+        timer.start();
+        //Güler
 
         //creating random Number for the xPos of the platform
         Random randomPos = new Random();
         int numPlatforms = 13;
-        Pane gamePane = new Pane();
 
 
         //top part of vbox for the score and settings
@@ -90,7 +143,7 @@ public class main_class extends Application {
         score.setPrefWidth(700);
         score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
         score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-        gamePane.getChildren().add(score);
+        gamePane.getChildren().addAll(score,ninjanormal, ninjalinks, ninjarechts);
 
         List<Platform> fixPlatforms = new ArrayList<>();
         List<MovingPlatform> randomPlatforms = new ArrayList<>();
@@ -140,10 +193,112 @@ public class main_class extends Application {
         timeline.play();
 
         // create scene
-        Scene playScene = new Scene(gamePane, 700, 700);
         map.setScene(playScene);
         map.show();
 
+    }
+    private void update() {
+        playScene.setOnKeyPressed(e -> {
+            switch (e.getCode()) {
+                case A -> {
+                    /*ninjalinks.isVisible();
+                    ninjanormal.setVisible(false);
+                    ninjarechts.setVisible(false);*/
+                        /*ninjalinks.relocate(x[0] - 10, y[0]);
+                        ninjarechts.relocate(x[0] - 10, y[0]);
+                        ninjanormal.relocate(x[0] - 10, y[0]);
+                        x[0] = x[0] - 10;*/
+                    xVel = -3.5;
+                }
+                case D -> {
+                    /*ninjarechts.isVisible();
+                    ninjanormal.setVisible(false);
+                    ninjalinks.setVisible(false);*/
+                        /*ninjarechts.relocate(x[0] + 10, y[0]);
+                        ninjalinks.relocate(x[0] + 10, y[0]);
+                        ninjanormal.relocate(x[0] + 10, y[0]);
+                        x[0] = x[0] + 10;*/
+                    xVel = 3.5;
+                }
+                case SPACE -> {
+                    //if (!executed){
+                    //    jumpingpoint = y[0];
+                    //executed = true;
+                    //}
+
+                    //jump();
+                    /*ninjanormal.relocate(x[0], y[0] - 10);
+                    ninjalinks.relocate(x[0], y[0] - 10);
+                    ninjarechts.relocate(x[0], y[0] - 10);
+
+                    y[0] = y[0] - 10;*/
+                    //yVel = -10;
+
+                    /*if (jumping){
+                        yVel = -10;
+                    }*/
+
+                    if (!executed) {
+                        executed = true;
+                        jumpingpoint = y[0];
+                        yVel = -3.5;
+                    }
+                }
+            }
+        });
+        playScene.setOnKeyReleased(e -> {
+            switch (e.getCode()) {
+                case A -> {
+                    /*ninjalinks.isVisible();
+                    ninjanormal.setVisible(false);
+                    ninjarechts.setVisible(false);*/
+                        /*ninjalinks.relocate(x[0] - 10, y[0]);
+                        ninjarechts.relocate(x[0] - 10, y[0]);
+                        ninjanormal.relocate(x[0] - 10, y[0]);
+                        x[0] = x[0] - 10;*/
+                    xVel = 0;
+                }
+                case D -> {
+                    /*ninjarechts.isVisible();
+                    ninjanormal.setVisible(false);
+                    ninjalinks.setVisible(false);*/
+                        /*ninjarechts.relocate(x[0] + 10, y[0]);
+                        ninjalinks.relocate(x[0] + 10, y[0]);
+                        ninjanormal.relocate(x[0] + 10, y[0]);
+                        x[0] = x[0] + 10;*/
+                    xVel = 0;
+                }
+                case SPACE -> {
+                    //jump();
+                    /*ninjanormal.relocate(x[0], y[0] - 10);
+                    ninjalinks.relocate(x[0], y[0] - 10);
+                    ninjarechts.relocate(x[0], y[0] - 10);
+
+                    //if (!(jumpingpoint <= y[0])) {
+                    //yVel = 10;
+                    //} else {
+                    //  yVel = 0;
+                    //}
+
+                    //canjump = false;
+                     */
+
+                    /*if (counter != 0){
+                        counter--;
+                        yVel = 10;
+                    }else yVel = 0;*/
+
+                    if (jumpingpoint <= y[0]) {
+                        yVel = 0;
+                    } else {
+                        yVel = 3.5;
+                    }
+
+                    //yVel = Math.min(jumpingpoint - y[0], 0);
+                    executed = false;
+                }
+            }
+        });
     }
 
     private void startGame() {
