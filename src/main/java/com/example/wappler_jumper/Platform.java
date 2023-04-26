@@ -1,8 +1,10 @@
 package com.example.wappler_jumper;
 
+import javafx.geometry.Bounds;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+
 
 
 public class Platform extends Pane {
@@ -26,6 +28,24 @@ public class Platform extends Pane {
 
         getChildren().add(rect);
     }
+
+    /**
+     * getting all the attributes of the platform
+     *
+     * @return as a rectangel
+     */
+    public Rectangle getRect() {
+        return new Rectangle(xPos, yPos, len, height);
+    }
+
+    /**
+     * return the bounds of the rectangle
+     * @return the bounds
+     */
+    public Bounds getBounds() {
+        return getRect().getBoundsInParent();
+    }
+
 
     /**
      * gets the xPos of the plattform
@@ -58,4 +78,22 @@ public class Platform extends Pane {
     public int getHeigt() {
         return height;
     }
+
+    /**
+     * setting the xPos
+     * @param xPos new xPos
+     */
+    public void setxPos(int xPos) {
+        this.xPos = xPos;
+    }
+
+    /**
+     * setting the yPos
+     * @param yPos new yPos
+     */
+    public void setyPos(int yPos) {
+        this.yPos = yPos;
+    }
+
+
 }
