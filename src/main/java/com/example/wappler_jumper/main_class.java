@@ -242,7 +242,7 @@ public class main_class extends Application {
                         x[0] = x[0] + 10;*/
                     xVel = 3.5;
                 }
-                case SPACE -> {
+                case W -> {
                     //if (!executed){
                     //    jumpingpoint = y[0];
                     //executed = true;
@@ -290,7 +290,7 @@ public class main_class extends Application {
                         x[0] = x[0] + 10;*/
                     xVel = 0;
                 }
-                case SPACE -> {
+                case W -> {
                     //jump();
                     /*ninjanormal.relocate(x[0], y[0] - 10);
                     ninjalinks.relocate(x[0], y[0] - 10);
@@ -321,51 +321,6 @@ public class main_class extends Application {
                 }
             }
         });
-    }
-
-    private void startGame() {
-        Stage map = new Stage();
-        map.setTitle("Ninja-Jumper");
-
-        //creating random Number for the xPos of the platform
-        Random randomPos = new Random();
-        VBox allPlatforms = new VBox();
-        VBox.setVgrow(allPlatforms, Priority.ALWAYS);
-        //top part of vbox for the score and settings
-        HBox score = new HBox();
-        score.setPrefHeight(80);
-        score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
-        allPlatforms.getChildren().add(score);
-
-        //creating random platforms with x and y positions
-        for (int i = 0; i < 7; i++) {
-            Pane container = new Pane();
-
-            container.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-
-            container.setPrefHeight(100);
-            container.setPrefWidth(700);
-            allPlatforms.getChildren().add(container);
-            container.setLayoutX(0);
-            container.setLayoutY(0);
-            int max = 610, min = 10;
-            //creating 2 platforms on each pane
-            for (int j = 0; j < 2; j++) {
-                int xPos = randomPos.nextInt(max - min + 1) + min;
-                int yPos = randomPos.nextInt(10, 70);
-
-                Platform platform = new Platform(xPos, yPos, 80, 20);
-                container.getChildren().add(platform);
-                max = (xPos + 100 > 545 ? 388 : 610);
-                min = (xPos + 100 < 498 ? 433 : 10);
-            }
-
-        }
-
-        //create scene
-        Scene playScene = new Scene(allPlatforms, 700, 700);
-        map.setScene(playScene);
-        map.show();
     }
 
     public static void main(String[] args) {
