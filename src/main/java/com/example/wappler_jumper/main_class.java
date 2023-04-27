@@ -5,6 +5,7 @@ import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -12,8 +13,11 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -25,25 +29,28 @@ import java.util.Random;
 public class main_class extends Application {
     //Güler
     Pane gamePane = new Pane();
+    List<MovingPlatform> randomPlatforms = new ArrayList<>();
+    List<Platform> fixPlatforms = new ArrayList<>();
     Scene playScene = new Scene(gamePane, 700, 700);
     //Bilder
-    static Image ninjaN = new Image("ninja_jumper_normal.png");
+    Image ninjaN = new Image("ninja_jumper_normal.png");
     Image ninjanL = new Image("ninja_jumper_links.png");
     Image ninjaR = new Image("ninja_jumper_rechts.png");
-    static ImageView ninjanormal = new ImageView(ninjaN);
+     ImageView ninjanormal = new ImageView(ninjaN);
     ImageView ninjalinks = new ImageView(ninjanL);
     ImageView ninjarechts = new ImageView(ninjaR);
-    static final int[] x = {300};
-    static final int[] y = {600};
-    private static double xVel = 0;
-    private static double yVel = 0;
-    private static int jumpingpoint;
-    private static boolean executed = false;
-    private static double gravity = 0.5;
-    private static int counter = 0;
-    private static boolean jumping = true;
-    private static boolean falling;
-    private static boolean dead = false;
+    int x = 125;
+    int y = 540;
+    private  double xVel = 0;
+    private  double yVel = 0;
+    private  int jumpingpoint;
+    private  boolean executed = false;
+    private  double gravity = 0.5;
+    private  int counter = 0;
+    private  boolean jumping = true;
+    private  boolean falling;
+    private  boolean dead = false;
+    private  boolean pause = false;
     //Güler
 
     @Override
@@ -101,32 +108,48 @@ public class main_class extends Application {
 
     private void play() {
         //Güler
+        Stage map = new Stage();
+        map.setTitle("Ninja-Jumper");
         //ninjanormal.isVisible();
         ninjalinks.setVisible(false);
         ninjarechts.setVisible(false);
         boolean playerdead = false;
-        //Güler
 
-        Stage map = new Stage();
-        map.setTitle("Ninja-Jumper");
+        //In-game Menü
+        pause = false;
+        Image imgeinstellungsmenu = new Image("Einstellungsmenu.png");
+        ImageView einstellungsmenu = new ImageView(imgeinstellungsmenu);
+        einstellungsmenu.relocate(630, 20);
+        einstellungsmenu.setOnKeyPressed(e -> {
 
-        //Güler
+            if (e.getCode() == KeyCode.P) {
+                ingamemenu();
+                map.close();
+                pause = true;
+            }
+        });
+
+        einstellungsmenu.setOnMouseClicked(e -> {
+            ingamemenu();
+            map.close();
+            pause = true;
+        });
         //Animation
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long l) {
                 update();
                 //yVel += gravity;
-                if (y[0] > 700) {
+                if (y > 700) {
                     dead = true;
-                }else dead = false;
+                } else dead = false;
                 if (dead) {
-                    System.out.println("Gameover");
                     //gameover
+                    System.out.println("Gameover");
                 }
-                x[0] += xVel;
-                y[0] += yVel;
-                ninjanormal.relocate(x[0], y[0]);
+                x += xVel;
+                y += yVel;
+                ninjanormal.relocate(x, y);
             }
         };
         timer.start();
@@ -143,10 +166,8 @@ public class main_class extends Application {
         score.setPrefWidth(700);
         score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
         score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-        gamePane.getChildren().addAll(score,ninjanormal, ninjalinks, ninjarechts);
+        gamePane.getChildren().addAll(score, ninjanormal, ninjalinks, ninjarechts, einstellungsmenu);
 
-        List<Platform> fixPlatforms = new ArrayList<>();
-        List<MovingPlatform> randomPlatforms = new ArrayList<>();
         //creating fix platforms
         Platform fixP1 = new Platform(150, 620, 80, 20);
         fixPlatforms.add(fixP1);
@@ -197,6 +218,7 @@ public class main_class extends Application {
         map.show();
 
     }
+
     private void update() {
         playScene.setOnKeyPressed(e -> {
             switch (e.getCode()) {
@@ -240,7 +262,7 @@ public class main_class extends Application {
 
                     if (!executed) {
                         executed = true;
-                        jumpingpoint = y[0];
+                        jumpingpoint = y;
                         yVel = -3.5;
                     }
                 }
@@ -288,7 +310,7 @@ public class main_class extends Application {
                         yVel = 10;
                     }else yVel = 0;*/
 
-                    if (jumpingpoint <= y[0]) {
+                    if (jumpingpoint <= y) {
                         yVel = 0;
                     } else {
                         yVel = 3.5;
@@ -348,5 +370,63 @@ public class main_class extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    private void ingamemenu() {
+        Stage stage = new Stage();
+        stage.setTitle("Einstellungsmenü");
+
+        //basic alignment
+        VBox menu = new VBox();
+        menu.setAlignment(Pos.CENTER);
+        menu.setPadding(new Insets(-200, 0, 0, 0));
+        menu.setSpacing(200);
+
+        //main menu button + style + setOnMouseClicked
+        Button retmainmenu = new Button("Main Menü");
+        retmainmenu.setStyle("-fx-background-color: #000000; " +
+                "-fx-text-fill: #FFFFFF; " +
+                "-fx-font-size: 24px; " +
+                "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " +
+                "-fx-pref-width: 200px; " +
+                "-fx-pref-height: 60px; " +
+                "-fx-background-radius: 30; " +
+                "-fx-border-radius: 30; " +
+                "-fx-border-color: #FFFFFF; " +
+                "-fx-border-width: 2px; " +
+                "-fx-cursor: hand;");
+        menu.getChildren().addAll(retmainmenu);
+        retmainmenu.setOnMouseClicked(e->{
+            Stage stage1 = new Stage();
+            try {
+                start(stage1);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            stage.close();
+        });
+
+        //Resume Button + style + setOnMouseClicked
+        Button resume = new Button("Resume");
+        resume.setStyle("-fx-background-color: #000000; " +
+                "-fx-text-fill: #FFFFFF; " +
+                "-fx-font-size: 24px; " +
+                "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " +
+                "-fx-pref-width: 120px; " +
+                "-fx-pref-height: 60px; " +
+                "-fx-background-radius: 30; " +
+                "-fx-border-radius: 30; " +
+                "-fx-border-color: #FFFFFF; " +
+                "-fx-border-width: 2px; " +
+                "-fx-cursor: hand;");
+        menu.getChildren().addAll(resume);
+        resume.setOnMouseClicked(e->{
+            play();
+            stage.close();
+        });
+
+        Scene mainMenu = new Scene(menu, 700, 700);
+        stage.setScene(mainMenu);
+        stage.show();
     }
 }
