@@ -5,7 +5,6 @@ import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -16,8 +15,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Shape;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -29,7 +26,7 @@ import java.util.Random;
 public class main_class extends Application {
     //Güler
     Pane gamePane = new Pane();
-    List<MovingPlatform> randomPlatforms = new ArrayList<>();
+    List<OPPlatform> randomPlatforms = new ArrayList<>();
     List<Platform> fixPlatforms = new ArrayList<>();
     Scene playScene = new Scene(gamePane, 700, 700);
     //Bilder
@@ -182,7 +179,7 @@ public class main_class extends Application {
 
         //creating random platforms
         for (int i = 0; i < fixPlatforms.size(); i++) {
-            //random x & y pos of the platform + lenght & height
+            //random x & y pos of the platform + length & height
             int xPosFix = fixPlatforms.get(i).getxPos();
             int xPos;
             if (xPosFix < 350) {
@@ -191,11 +188,14 @@ public class main_class extends Application {
                 xPos = randomPos.nextInt(xPosFix - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
             }
             int yPos = fixPlatforms.get(i).getyPos() - 30;
-            int lenght = 80;
+            int length = 80;
             int height = 20;
             //int dir = (i % 2 == 0 ? 1 : -1);
-            MovingPlatform newPlatform = new MovingPlatform(xPos, yPos, lenght, height, 1);
+            OPPlatform newPlatform = new OPPlatform(xPos, yPos, length, height, 1);
             newPlatform.move();
+            if (i == 3) {
+                fixPlatforms.get(3).breakit();
+            }
             randomPlatforms.add(newPlatform);
 
         }
@@ -206,7 +206,7 @@ public class main_class extends Application {
 
         Timeline timeline = new Timeline(new KeyFrame(Duration.millis(16), event -> {
             // Update the platforms by calling the move method
-            for (MovingPlatform movingPlatform : randomPlatforms) {
+            for (OPPlatform movingPlatform : randomPlatforms) {
                 movingPlatform.move();
             }
         }));

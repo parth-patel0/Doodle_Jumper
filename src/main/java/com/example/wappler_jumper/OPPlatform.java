@@ -1,12 +1,18 @@
 package com.example.wappler_jumper;
 
-public class MovingPlatform extends Platform {
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.scene.shape.Rectangle;
+import javafx.util.Duration;
+
+public class OPPlatform extends Platform {
 
     private int v;
     private int s = 30;
     private boolean movingRight = true;
 
-    public MovingPlatform(int xPos, int yPos, int len, int height, int v) {
+    public OPPlatform(int xPos, int yPos, int len, int height, int v) {
         super(xPos, yPos, len, height);
         this.v = v;
         move();

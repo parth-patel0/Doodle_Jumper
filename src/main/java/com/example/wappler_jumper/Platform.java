@@ -1,10 +1,13 @@
 package com.example.wappler_jumper;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.geometry.Bounds;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-
+import javafx.util.Duration;
 
 
 public class Platform extends Pane {
@@ -95,5 +98,11 @@ public class Platform extends Pane {
         this.yPos = yPos;
     }
 
-
+    public void breakit() {
+        Rectangle rectangle = getRect();
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.seconds(10), new KeyValue(rectangle.widthProperty(), 0))
+        );
+        timeline.play();
+    }
 }
