@@ -28,26 +28,27 @@ public class main_class extends Application {
     Pane gamePane = new Pane();
     List<OPPlatform> randomPlatforms = new ArrayList<>();
     List<Platform> fixPlatforms = new ArrayList<>();
+
     Scene playScene = new Scene(gamePane, 700, 700);
     //Bilder
     Image ninjaN = new Image("ninja_jumper_normal.png");
     Image ninjanL = new Image("ninja_jumper_links.png");
     Image ninjaR = new Image("ninja_jumper_rechts.png");
-     ImageView ninjanormal = new ImageView(ninjaN);
+    ImageView ninjanormal = new ImageView(ninjaN);
     ImageView ninjalinks = new ImageView(ninjanL);
     ImageView ninjarechts = new ImageView(ninjaR);
     int x = 125;
     int y = 540;
-    private  double xVel = 0;
-    private  double yVel = 0;
-    private  int jumpingpoint;
-    private  boolean executed = false;
-    private  double gravity = 0.5;
-    private  int counter = 0;
-    private  boolean jumping = true;
-    private  boolean falling;
-    private  boolean dead = false;
-    private  boolean pause = false;
+    private double xVel = 0;
+    private double yVel = 0;
+    private int jumpingpoint;
+    private boolean executed = false;
+    private double gravity = 1;
+    private int counter = 0;
+    private boolean jumping = true;
+    private boolean falling;
+    private boolean dead = false;
+    private boolean pause = false;
     //Güler
 
     @Override
@@ -178,24 +179,21 @@ public class main_class extends Application {
         fixPlatforms.add(fixP5);
 
         //creating random platforms
-        for (int i = 0; i < fixPlatforms.size(); i++) {
+        for (Platform fixPlatform : fixPlatforms) {
             //random x & y pos of the platform + length & height
-            int xPosFix = fixPlatforms.get(i).getxPos();
+            int xPosFix = fixPlatform.getxPos();
             int xPos;
             if (xPosFix < 350) {
                 xPos = randomPos.nextInt(621 - xPosFix - 100 + 1) + xPosFix + 100; //random xPos from xPosFix + 100 to 621
             } else {
                 xPos = randomPos.nextInt(xPosFix - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
             }
-            int yPos = fixPlatforms.get(i).getyPos() - 30;
+            int yPos = fixPlatform.getyPos() - 30;
             int length = 80;
             int height = 20;
             //int dir = (i % 2 == 0 ? 1 : -1);
             OPPlatform newPlatform = new OPPlatform(xPos, yPos, length, height, 1);
             newPlatform.move();
-            if (i == 3) {
-                fixPlatforms.get(3).breakit();
-            }
             randomPlatforms.add(newPlatform);
 
         }
@@ -220,6 +218,8 @@ public class main_class extends Application {
     }
 
     private void update() {
+        checkCollisions();
+
         playScene.setOnKeyPressed(e -> {
             switch (e.getCode()) {
                 case A -> {
@@ -230,7 +230,8 @@ public class main_class extends Application {
                         ninjarechts.relocate(x[0] - 10, y[0]);
                         ninjanormal.relocate(x[0] - 10, y[0]);
                         x[0] = x[0] - 10;*/
-                    xVel = -3.5;
+                    xVel = -2.5;
+//                    yVel = 2.5;
                 }
                 case D -> {
                     /*ninjarechts.isVisible();
@@ -240,7 +241,8 @@ public class main_class extends Application {
                         ninjalinks.relocate(x[0] + 10, y[0]);
                         ninjanormal.relocate(x[0] + 10, y[0]);
                         x[0] = x[0] + 10;*/
-                    xVel = 3.5;
+                    xVel = 2.5;
+//                    yVel = 2.5;
                 }
                 case W -> {
                     //if (!executed){
@@ -263,11 +265,12 @@ public class main_class extends Application {
                     if (!executed) {
                         executed = true;
                         jumpingpoint = y;
-                        yVel = -3.5;
+                        yVel = -2.5;
                     }
                 }
             }
         });
+
         playScene.setOnKeyReleased(e -> {
             switch (e.getCode()) {
                 case A -> {
@@ -313,7 +316,7 @@ public class main_class extends Application {
                     if (jumpingpoint <= y) {
                         yVel = 0;
                     } else {
-                        yVel = 3.5;
+                        yVel = 2.5;
                     }
 
                     //yVel = Math.min(jumpingpoint - y[0], 0);
@@ -351,7 +354,7 @@ public class main_class extends Application {
                 "-fx-border-width: 2px; " +
                 "-fx-cursor: hand;");
         menu.getChildren().addAll(retmainmenu);
-        retmainmenu.setOnMouseClicked(e->{
+        retmainmenu.setOnMouseClicked(e -> {
             Stage stage1 = new Stage();
             try {
                 start(stage1);
@@ -375,7 +378,7 @@ public class main_class extends Application {
                 "-fx-border-width: 2px; " +
                 "-fx-cursor: hand;");
         menu.getChildren().addAll(resume);
-        resume.setOnMouseClicked(e->{
+        resume.setOnMouseClicked(e -> {
             play();
             stage.close();
         });
@@ -384,4 +387,26 @@ public class main_class extends Application {
         stage.setScene(mainMenu);
         stage.show();
     }
+
+    private void checkCollisions() {
+        for (Platform platform : fixPlatforms) {
+            if (collisionChecker(platform)) break;
+        }
+        for (Platform randomPlatform : randomPlatforms) {
+            if (collisionChecker(randomPlatform)) break;
+        }
+
+
+        y += gravity;
+    }
+
+    private boolean collisionChecker(Platform platform) {
+        if ((x > platform.getxPos() - 29 && x < platform.getxPos() + 80) && (y + 45 > platform.getyPos() && y + 45 < platform.getyPos() + 20)) {
+            y = platform.getyPos() - 46;
+            yVel = 0;
+            return true;
+        }
+        return false;
+    }
+
 }

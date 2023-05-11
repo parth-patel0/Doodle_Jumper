@@ -98,11 +98,4 @@ public class Platform extends Pane {
         this.yPos = yPos;
     }
 
-    public void breakit() {
-        Rectangle rectangle = getRect();
-        Timeline timeline = new Timeline(
-                new KeyFrame(Duration.seconds(10), new KeyValue(rectangle.widthProperty(), 0))
-        );
-        timeline.play();
-    }
 }
