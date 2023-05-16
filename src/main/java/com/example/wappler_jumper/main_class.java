@@ -10,6 +10,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -18,10 +19,16 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+import javax.print.attribute.standard.Media;
+import javax.sound.sampled.*;
+import java.nio.file.Paths;
 
 public class main_class extends Application {
     //Güler
@@ -45,7 +52,7 @@ public class main_class extends Application {
     private boolean executed = false;
     private double gravity = 1;
     private int counter = 0;
-    private boolean jumping = true;
+    private boolean jumping;
     private boolean falling;
     private boolean dead = false;
     private boolean pause = false;
@@ -69,32 +76,24 @@ public class main_class extends Application {
 
         //title + curve style
         Label title = new Label("Ninja Jumper");
-        title.setStyle("-fx-text-fill: #000000; " +
-                "-fx-font-size: 40px; " +
-                "-fx-font-weight: bold; " +
-                "-fx-font-family: 'Ink Free', Tahoma, Geneva, Verdana, sans-serif; " +
-                "-fx-pref-width: 350px; " +
-                "-fx-pref-height: 60px; " +
-                "-fx-font-weight: bold;");
+        title.setStyle("-fx-text-fill: #000000; " + "-fx-font-size: 40px; " + "-fx-font-weight: bold; " + "-fx-font-family: 'Ink Free', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 350px; " + "-fx-pref-height: 60px; " + "-fx-font-weight: bold;");
         title.setPadding(new Insets(0, 0, 0, 44));
 
         //play button + style
         Button playButton = new Button("Play");
-        playButton.setStyle("-fx-background-color: #000000; " +
-                "-fx-text-fill: #FFFFFF; " +
-                "-fx-font-size: 24px; " +
-                "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " +
-                "-fx-pref-width: 120px; " +
-                "-fx-pref-height: 60px; " +
-                "-fx-background-radius: 30; " +
-                "-fx-border-radius: 30; " +
-                "-fx-border-color: #FFFFFF; " +
-                "-fx-border-width: 2px; " +
-                "-fx-cursor: hand;");
+        playButton.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 24px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 120px; " + "-fx-pref-height: 60px; " + "-fx-background-radius: 30; " + "-fx-border-radius: 30; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 2px; " + "-fx-cursor: hand;");
         playButton.setOnAction(actionEvent -> {
             stage.close();
             //startGame(); --> first version with several panes
-            play();
+            try {
+                play();
+            } catch (UnsupportedAudioFileException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (LineUnavailableException e) {
+                throw new RuntimeException(e);
+            }
         });
 
         menu.getChildren().addAll(title, playButton);
@@ -104,7 +103,7 @@ public class main_class extends Application {
         stage.show();
     }
 
-    private void play() {
+    private void play() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         //Güler
         Stage map = new Stage();
         map.setTitle("Ninja-Jumper");
@@ -115,8 +114,8 @@ public class main_class extends Application {
 
         //In-game Menü
         pause = false;
-        Image imgeinstellungsmenu = new Image("Einstellungsmenu.png");
-        ImageView einstellungsmenu = new ImageView(imgeinstellungsmenu);
+        Button einstellungsmenu = new Button("Pause");
+        einstellungsmenu.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 12px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 60px; " + "-fx-pref-height: 30px; " + "-fx-background-radius: 15; " + "-fx-border-radius: 15; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 1px; " + "-fx-cursor: hand;");
         einstellungsmenu.relocate(630, 20);
         einstellungsmenu.setOnKeyPressed(e -> {
 
@@ -132,31 +131,15 @@ public class main_class extends Application {
             map.close();
             pause = true;
         });
-        //Animation
-        AnimationTimer timer = new AnimationTimer() {
-            @Override
-            public void handle(long l) {
-                update();
-                //yVel += gravity;
-                if (y > 700) {
-                    dead = true;
-                } else dead = false;
-                if (dead) {
-                    //gameover
-                    System.out.println("Gameover");
-                }
-                x += xVel;
-                y += yVel;
-                ninjanormal.relocate(x, y);
-            }
-        };
-        timer.start();
         //Güler
 
         //creating random Number for the xPos of the platform
         Random randomPos = new Random();
         int numPlatforms = 13;
 
+
+        //Musik
+        playMusic("C:\\Users\\furka\\IdeaProjects\\Doodle_Jumper\\src\\main\\resources\\mine-diamonds-karaoke.mp3",0);
 
         //top part of vbox for the score and settings
         HBox score = new HBox();
@@ -198,9 +181,6 @@ public class main_class extends Application {
 
         }
 
-        //adding fix and random platforms in the pane
-        gamePane.getChildren().addAll(fixPlatforms);
-        gamePane.getChildren().addAll(randomPlatforms);
 
         Timeline timeline = new Timeline(new KeyFrame(Duration.millis(16), event -> {
             // Update the platforms by calling the move method
@@ -211,6 +191,60 @@ public class main_class extends Application {
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
 
+        //Animation
+        AnimationTimer timer = new AnimationTimer() {
+            @Override
+            public void handle(long l) {
+                update();
+                //yVel += gravity;
+                if (y > 700) {
+                    dead = true;
+                } else dead = false;
+                if (dead) {
+                    //gameover
+                    System.out.println("Gameover");
+                }
+                x += xVel;
+                y += yVel;
+                ninjanormal.relocate(x, y);
+                if (jumping) {
+                    for (Platform fplatform : fixPlatforms) {
+                        fplatform.setLayoutY((fplatform.getLayoutY() + 2.5));
+                        if (fplatform.getyPos() + fplatform.getLayoutY() > playScene.getHeight()) {
+                            //fplatform.setVisible(false);
+                            //fplatform.setyPos(500);
+                            fplatform.relocate(0, -200);
+                        }
+                    }
+                    for (OPPlatform rplatform : randomPlatforms) {
+                        rplatform.setLayoutY((rplatform.getLayoutY() + 2.5));
+                        /*
+                        * if (xPosFix < 350) {
+                            xPos = randomPos.nextInt(621 - xPosFix - 100 + 1) + xPosFix + 100; //random xPos from xPosFix + 100 to 621
+                          } else {
+                              xPos = randomPos.nextInt(xPosFix - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
+                            }*/
+                        if (rplatform.getyPos() + rplatform.getLayoutY() > playScene.getHeight()) {
+                            //rplatform.setVisible(false);
+                            //rplatform.setyPos(200);
+                            /*int xPosFixForRandom = fixPlatforms.get(counter++).getxPos();
+                            int xPosforRandom = 0;
+                            if (xPosFixForRandom < 350) {
+                                xPosforRandom = randomPos.nextInt(621 - xPosFixForRandom - 100 + 1) + xPosFixForRandom + 100; //random xPos from xPosFix + 100 to 621
+                            } else {
+                                xPosforRandom = randomPos.nextInt(xPosFixForRandom - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
+                            }*/
+                            rplatform.relocate(0, -200);
+                            //randomPlatforms.add(new OPPlatform((int) ninjanormal.getX() + 200, (int) (ninjanormal.getY() + 200), 80, 20, 1));
+                        }
+                    }
+                }
+            }
+        };
+        //adding fix and random platforms in the pane
+        gamePane.getChildren().addAll(fixPlatforms);
+        gamePane.getChildren().addAll(randomPlatforms);
+        timer.start();
         // create scene
         map.setScene(playScene);
         map.show();
@@ -231,7 +265,7 @@ public class main_class extends Application {
                         ninjanormal.relocate(x[0] - 10, y[0]);
                         x[0] = x[0] - 10;*/
                     xVel = -2.5;
-//                    yVel = 2.5;
+                    //yVel = 2.5;
                 }
                 case D -> {
                     /*ninjarechts.isVisible();
@@ -267,6 +301,7 @@ public class main_class extends Application {
                         jumpingpoint = y;
                         yVel = -2.5;
                     }
+                    jumping = true;
                 }
             }
         });
@@ -321,6 +356,7 @@ public class main_class extends Application {
 
                     //yVel = Math.min(jumpingpoint - y[0], 0);
                     executed = false;
+                    jumping = false;
                 }
             }
         });
@@ -342,17 +378,7 @@ public class main_class extends Application {
 
         //main menu button + style + setOnMouseClicked
         Button retmainmenu = new Button("Main Menü");
-        retmainmenu.setStyle("-fx-background-color: #000000; " +
-                "-fx-text-fill: #FFFFFF; " +
-                "-fx-font-size: 24px; " +
-                "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " +
-                "-fx-pref-width: 200px; " +
-                "-fx-pref-height: 60px; " +
-                "-fx-background-radius: 30; " +
-                "-fx-border-radius: 30; " +
-                "-fx-border-color: #FFFFFF; " +
-                "-fx-border-width: 2px; " +
-                "-fx-cursor: hand;");
+        retmainmenu.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 24px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 200px; " + "-fx-pref-height: 60px; " + "-fx-background-radius: 30; " + "-fx-border-radius: 30; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 2px; " + "-fx-cursor: hand;");
         menu.getChildren().addAll(retmainmenu);
         retmainmenu.setOnMouseClicked(e -> {
             Stage stage1 = new Stage();
@@ -366,20 +392,18 @@ public class main_class extends Application {
 
         //Resume Button + style + setOnMouseClicked
         Button resume = new Button("Resume");
-        resume.setStyle("-fx-background-color: #000000; " +
-                "-fx-text-fill: #FFFFFF; " +
-                "-fx-font-size: 24px; " +
-                "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " +
-                "-fx-pref-width: 120px; " +
-                "-fx-pref-height: 60px; " +
-                "-fx-background-radius: 30; " +
-                "-fx-border-radius: 30; " +
-                "-fx-border-color: #FFFFFF; " +
-                "-fx-border-width: 2px; " +
-                "-fx-cursor: hand;");
+        resume.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 24px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 120px; " + "-fx-pref-height: 60px; " + "-fx-background-radius: 30; " + "-fx-border-radius: 30; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 2px; " + "-fx-cursor: hand;");
         menu.getChildren().addAll(resume);
         resume.setOnMouseClicked(e -> {
-            play();
+            try {
+                play();
+            } catch (UnsupportedAudioFileException ex) {
+                throw new RuntimeException(ex);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            } catch (LineUnavailableException ex) {
+                throw new RuntimeException(ex);
+            }
             stage.close();
         });
 
@@ -390,13 +414,13 @@ public class main_class extends Application {
 
     private void checkCollisions() {
         for (Platform platform : fixPlatforms) {
-            if (collisionChecker(platform)) break;
+            if (collisionChecker(platform)) jumping = false;
+            break;
         }
         for (Platform randomPlatform : randomPlatforms) {
-            if (collisionChecker(randomPlatform)) break;
+            if (collisionChecker(randomPlatform)) jumping = false;
+            break;
         }
-
-
         y += gravity;
     }
 
@@ -407,6 +431,24 @@ public class main_class extends Application {
             return true;
         }
         return false;
+    }
+    public static void playMusic(String file, int number) {
+        try {
+            File musicPath = new File(file);
+
+            if (musicPath.exists()) {
+                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(musicPath);
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioInputStream);
+                if (number == 0) {
+                    clip.loop(Clip.LOOP_CONTINUOUSLY);
+                }
+                clip.start();
+                //musicClip = clip;
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
 
 }
