@@ -40,11 +40,7 @@ public class main_class extends Application {
     Scene playScene = new Scene(gamePane, 700, 700);
     //Bilder
     Image ninjaN = new Image("ninja_jumper_normal.png");
-    Image ninjanL = new Image("ninja_jumper_links.png");
-    Image ninjaR = new Image("ninja_jumper_rechts.png");
     ImageView ninjanormal = new ImageView(ninjaN);
-    ImageView ninjalinks = new ImageView(ninjanL);
-    ImageView ninjarechts = new ImageView(ninjaR);
     int x = 125;
     int y = 540;
     private double xVel = 0;
@@ -57,11 +53,16 @@ public class main_class extends Application {
     private boolean falling;
     private boolean dead = false;
     private boolean pause = false;
+    private Stage map = new Stage();
+    private Label player = new Label();
+    private Button einstellungsmenu = new Button("Pause");
+    private HBox score = new HBox();
+
     //Güler
 
     @Override
     public void start(Stage stage) throws IOException {
-        List<Platform> rects = gamePane.getChildren().stream().filter(p -> p instanceof Platform).map(p-> (Platform) p).toList();
+        List<Platform> rects = gamePane.getChildren().stream().filter(p -> p instanceof Platform).map(p -> (Platform) p).toList();
         stage.setTitle("Welcome to Ninja Jumper!");
         /*
          * TODO
@@ -105,62 +106,22 @@ public class main_class extends Application {
         stage.show();
     }
 
-    private void play() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
-        //Güler
-        Stage map = new Stage();
+    private void initGame() {
         map.setTitle("Ninja-Jumper");
-        //ninjanormal.isVisible();
-        ninjalinks.setVisible(false);
-        ninjarechts.setVisible(false);
-        Label player = new Label();
+
+        //Player
         player.setGraphic(ninjanormal);
-        boolean playerdead = false;
 
         //In-game Menü
-        pause = false;
-        Button einstellungsmenu = new Button("Pause");
+        //pause = false;
         einstellungsmenu.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 12px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 60px; " + "-fx-pref-height: 30px; " + "-fx-background-radius: 15; " + "-fx-border-radius: 15; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 1px; " + "-fx-cursor: hand;");
         einstellungsmenu.relocate(630, 20);
-        einstellungsmenu.setOnKeyPressed(e -> {
-
-            if (e.getCode() == KeyCode.P) {
-                ingamemenu();
-                map.close();
-            }
-        });
-
-        einstellungsmenu.setOnMouseClicked(e -> {
-            ingamemenu();
-            map.close();
-        });
-        //Güler
-
-        //creating random Number for the xPos of the platform
-        Random randomPos = new Random();
-        int numPlatforms = 13;
-
-
-        //Musik
-        /*Media Sound = new Media(Paths.get("mine-diamonds-karaoke.wav").toURI().toString());
-        MediaPlayer mediaPlayer = new MediaPlayer(Sound);
-        mediaPlayer.play();*/
-
-        //playMusic("mine-diamonds-karaoke.wav",0);
-        /*AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("C:\\Users\\furka\\IdeaProjects\\Doodle_Jumper\\src\\main\\resources\\mine-diamonds-karaoke.wav"));
-        Clip clip = AudioSystem.getClip();
-        clip.open(audioInputStream);
-        //if (number == 0) {
-            clip.loop(Clip.LOOP_CONTINUOUSLY);
-        //}
-        clip.start();*/
 
         //top part of vbox for the score and settings
-        HBox score = new HBox();
         score.setPrefHeight(80);
         score.setPrefWidth(700);
         score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
         score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-        gamePane.getChildren().addAll(score, player, ninjalinks, ninjarechts, einstellungsmenu);
 
         //creating fix platforms
         Platform fixP1 = new Platform(150, 620, 80, 20);
@@ -173,6 +134,10 @@ public class main_class extends Application {
         fixPlatforms.add(fixP4);
         Platform fixP5 = new Platform(330, 170, 80, 20);
         fixPlatforms.add(fixP5);
+
+        //creating random Number for the xPos of the platform
+        Random randomPos = new Random();
+        int numPlatforms = 13;
 
         //creating random platforms
         for (Platform fixPlatform : fixPlatforms) {
@@ -191,7 +156,6 @@ public class main_class extends Application {
             OPPlatform newPlatform = new OPPlatform(xPos, yPos, length, height, 1);
             newPlatform.move();
             randomPlatforms.add(newPlatform);
-
         }
 
 
@@ -203,6 +167,43 @@ public class main_class extends Application {
         }));
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
+
+        gamePane.getChildren().addAll(score, player, einstellungsmenu);
+        //adding fix and random platforms in the pane
+        gamePane.getChildren().addAll(fixPlatforms);
+        gamePane.getChildren().addAll(randomPlatforms);
+
+        // create scene
+        map.setScene(playScene);
+    }
+
+    private void play() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+        //Güler
+        if (!pause) {
+            initGame();
+        }
+        //In-game Menü
+        einstellungsmenu.setOnMouseClicked(e -> {
+            ingamemenu();
+            map.close();
+        });
+        //Güler
+
+
+        //Musik
+        /*Media Sound = new Media(Paths.get("mine-diamonds-karaoke.wav").toURI().toString());
+        MediaPlayer mediaPlayer = new MediaPlayer(Sound);
+        mediaPlayer.play();*/
+
+        //playMusic("mine-diamonds-karaoke.wav",0);
+        /*AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("C:\\Users\\furka\\IdeaProjects\\Doodle_Jumper\\src\\main\\resources\\mine-diamonds-karaoke.wav"));
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioInputStream);
+        //if (number == 0) {
+            clip.loop(Clip.LOOP_CONTINUOUSLY);
+        //}
+        clip.start();*/
+
 
         //Animation
         AnimationTimer timer = new AnimationTimer() {
@@ -254,14 +255,10 @@ public class main_class extends Application {
                 }
             }
         };
-        //adding fix and random platforms in the pane
-        gamePane.getChildren().addAll(fixPlatforms);
-        gamePane.getChildren().addAll(randomPlatforms);
-        timer.start();
-        // create scene
-        map.setScene(playScene);
+        if (!pause) {
+            timer.start();
+        }
         map.show();
-
     }
 
     private void update() {
@@ -270,45 +267,12 @@ public class main_class extends Application {
         playScene.setOnKeyPressed(e -> {
             switch (e.getCode()) {
                 case A -> {
-                    /*ninjalinks.isVisible();
-                    ninjanormal.setVisible(false);
-                    ninjarechts.setVisible(false);*/
-                        /*ninjalinks.relocate(x[0] - 10, y[0]);
-                        ninjarechts.relocate(x[0] - 10, y[0]);
-                        ninjanormal.relocate(x[0] - 10, y[0]);
-                        x[0] = x[0] - 10;*/
                     xVel = -2.5;
-                    //yVel = 2.5;
                 }
                 case D -> {
-                    /*ninjarechts.isVisible();
-                    ninjanormal.setVisible(false);
-                    ninjalinks.setVisible(false);*/
-                        /*ninjarechts.relocate(x[0] + 10, y[0]);
-                        ninjalinks.relocate(x[0] + 10, y[0]);
-                        ninjanormal.relocate(x[0] + 10, y[0]);
-                        x[0] = x[0] + 10;*/
                     xVel = 2.5;
-//                    yVel = 2.5;
                 }
                 case W -> {
-                    //if (!executed){
-                    //    jumpingpoint = y[0];
-                    //executed = true;
-                    //}
-
-                    //jump();
-                    /*ninjanormal.relocate(x[0], y[0] - 10);
-                    ninjalinks.relocate(x[0], y[0] - 10);
-                    ninjarechts.relocate(x[0], y[0] - 10);
-
-                    y[0] = y[0] - 10;*/
-                    //yVel = -10;
-
-                    /*if (jumping){
-                        yVel = -10;
-                    }*/
-
                     if (!executed) {
                         executed = true;
                         jumpingpoint = y;
@@ -322,51 +286,17 @@ public class main_class extends Application {
         playScene.setOnKeyReleased(e -> {
             switch (e.getCode()) {
                 case A -> {
-                    /*ninjalinks.isVisible();
-                    ninjanormal.setVisible(false);
-                    ninjarechts.setVisible(false);*/
-                        /*ninjalinks.relocate(x[0] - 10, y[0]);
-                        ninjarechts.relocate(x[0] - 10, y[0]);
-                        ninjanormal.relocate(x[0] - 10, y[0]);
-                        x[0] = x[0] - 10;*/
                     xVel = 0;
                 }
                 case D -> {
-                    /*ninjarechts.isVisible();
-                    ninjanormal.setVisible(false);
-                    ninjalinks.setVisible(false);*/
-                        /*ninjarechts.relocate(x[0] + 10, y[0]);
-                        ninjalinks.relocate(x[0] + 10, y[0]);
-                        ninjanormal.relocate(x[0] + 10, y[0]);
-                        x[0] = x[0] + 10;*/
                     xVel = 0;
                 }
                 case W -> {
-                    //jump();
-                    /*ninjanormal.relocate(x[0], y[0] - 10);
-                    ninjalinks.relocate(x[0], y[0] - 10);
-                    ninjarechts.relocate(x[0], y[0] - 10);
-
-                    //if (!(jumpingpoint <= y[0])) {
-                    //yVel = 10;
-                    //} else {
-                    //  yVel = 0;
-                    //}
-
-                    //canjump = false;
-                     */
-
-                    /*if (counter != 0){
-                        counter--;
-                        yVel = 10;
-                    }else yVel = 0;*/
-
                     if (jumpingpoint <= y) {
                         yVel = 0;
                     } else {
                         yVel = 2.5;
                     }
-
                     //yVel = Math.min(jumpingpoint - y[0], 0);
                     executed = false;
                     jumping = false;
@@ -380,7 +310,6 @@ public class main_class extends Application {
     }
 
     private void ingamemenu() {
-        pause = true;
         Stage stage = new Stage();
         stage.setTitle("Einstellungsmenü");
 
@@ -397,6 +326,8 @@ public class main_class extends Application {
         retmainmenu.setOnMouseClicked(e -> {
             Stage stage1 = new Stage();
             try {
+                gamePane.getChildren().removeAll();
+                pause = false;
                 start(stage1);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
@@ -410,6 +341,7 @@ public class main_class extends Application {
         menu.getChildren().addAll(resume);
         resume.setOnMouseClicked(e -> {
             try {
+                pause = true;
                 play();
             } catch (UnsupportedAudioFileException ex) {
                 throw new RuntimeException(ex);
@@ -446,6 +378,7 @@ public class main_class extends Application {
         }
         return false;
     }
+
     public static void playMusic(String file, int number) {
         try {
             File musicPath = new File(file);
