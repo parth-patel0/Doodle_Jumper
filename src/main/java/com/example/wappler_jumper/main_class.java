@@ -7,28 +7,29 @@ import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CopyOnWriteArrayList;
 import javax.print.attribute.standard.Media;
 import javax.sound.sampled.*;
-import java.nio.file.Paths;
+/*import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;*/
 
 public class main_class extends Application {
     //Güler
@@ -60,6 +61,7 @@ public class main_class extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        List<Platform> rects = gamePane.getChildren().stream().filter(p -> p instanceof Platform).map(p-> (Platform) p).toList();
         stage.setTitle("Welcome to Ninja Jumper!");
         /*
          * TODO
@@ -110,6 +112,8 @@ public class main_class extends Application {
         //ninjanormal.isVisible();
         ninjalinks.setVisible(false);
         ninjarechts.setVisible(false);
+        Label player = new Label();
+        player.setGraphic(ninjanormal);
         boolean playerdead = false;
 
         //In-game Menü
@@ -122,14 +126,12 @@ public class main_class extends Application {
             if (e.getCode() == KeyCode.P) {
                 ingamemenu();
                 map.close();
-                pause = true;
             }
         });
 
         einstellungsmenu.setOnMouseClicked(e -> {
             ingamemenu();
             map.close();
-            pause = true;
         });
         //Güler
 
@@ -139,7 +141,18 @@ public class main_class extends Application {
 
 
         //Musik
-        playMusic("C:\\Users\\furka\\IdeaProjects\\Doodle_Jumper\\src\\main\\resources\\mine-diamonds-karaoke.mp3",0);
+        /*Media Sound = new Media(Paths.get("mine-diamonds-karaoke.wav").toURI().toString());
+        MediaPlayer mediaPlayer = new MediaPlayer(Sound);
+        mediaPlayer.play();*/
+
+        //playMusic("mine-diamonds-karaoke.wav",0);
+        /*AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("C:\\Users\\furka\\IdeaProjects\\Doodle_Jumper\\src\\main\\resources\\mine-diamonds-karaoke.wav"));
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioInputStream);
+        //if (number == 0) {
+            clip.loop(Clip.LOOP_CONTINUOUSLY);
+        //}
+        clip.start();*/
 
         //top part of vbox for the score and settings
         HBox score = new HBox();
@@ -147,7 +160,7 @@ public class main_class extends Application {
         score.setPrefWidth(700);
         score.setBackground(new Background(new BackgroundFill(Color.LIGHTBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
         score.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-        gamePane.getChildren().addAll(score, ninjanormal, ninjalinks, ninjarechts, einstellungsmenu);
+        gamePane.getChildren().addAll(score, player, ninjalinks, ninjarechts, einstellungsmenu);
 
         //creating fix platforms
         Platform fixP1 = new Platform(150, 620, 80, 20);
@@ -206,7 +219,7 @@ public class main_class extends Application {
                 }
                 x += xVel;
                 y += yVel;
-                ninjanormal.relocate(x, y);
+                player.relocate(x, y);
                 if (jumping) {
                     for (Platform fplatform : fixPlatforms) {
                         fplatform.setLayoutY((fplatform.getLayoutY() + 2.5));
@@ -367,6 +380,7 @@ public class main_class extends Application {
     }
 
     private void ingamemenu() {
+        pause = true;
         Stage stage = new Stage();
         stage.setTitle("Einstellungsmenü");
 
