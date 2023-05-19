@@ -5,17 +5,18 @@ import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -23,20 +24,25 @@ import javafx.util.Duration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import javax.print.attribute.standard.Media;
 import javax.sound.sampled.*;
 /*import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;*/
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.File;
+import java.io.IOException;
 
 public class main_class extends Application {
     //Güler
     Pane gamePane = new Pane();
     List<OPPlatform> randomPlatforms = new ArrayList<>();
     List<Platform> fixPlatforms = new ArrayList<>();
-
     Scene playScene = new Scene(gamePane, 700, 700);
     //Bilder
     Image ninjaN = new Image("ninja_jumper_normal.png");
@@ -44,19 +50,27 @@ public class main_class extends Application {
     int x = 125;
     int y = 540;
     private double xVel = 0;
-    private double yVel = 0;
-    private int jumpingpoint;
-    private boolean executed = false;
+    private static double yVel = 0;
     private double gravity = 1;
-    private int counter = 0;
     private boolean jumping;
-    private boolean falling;
     private boolean dead = false;
     private boolean pause = false;
-    private Stage map = new Stage();
-    private Label player = new Label();
-    private Button einstellungsmenu = new Button("Pause");
-    private HBox score = new HBox();
+    private final Stage map = new Stage();
+    private final Label player = new Label();
+    private final Button einstellungsmenu = new Button("Pause");
+    private final HBox score = new HBox();
+    private static final long jumpingtime = 250;
+    private double ingamescorecounter;
+    private double highscorecounter = 0;
+    TextField ingamescore = new TextField();
+    TextField highscore = new TextField();
+    Clip clip;
+    Slider slider = new Slider(0, 6.0206, 3);
+    FloatControl gainControl;
+    boolean musicplaying;
+    private boolean executed = false;
+    private Circle blackhole;
+    private int blackholecounter = 0;
 
     //Güler
 
@@ -107,6 +121,10 @@ public class main_class extends Application {
     }
 
     private void initGame() {
+        gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+        gamePane.getChildren().removeAll(fixPlatforms);
+        gamePane.getChildren().removeAll(randomPlatforms);
+
         map.setTitle("Ninja-Jumper");
 
         //Player
@@ -168,13 +186,27 @@ public class main_class extends Application {
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
 
-        gamePane.getChildren().addAll(score, player, einstellungsmenu);
+        //Hindernis (schwarzes loch)
+        blackhole = new Circle(200, 400, 15, Color.BLACK);
+        //List<Circle> circles = gamePane.getChildren().stream().filter(p -> p instanceof Circle).map(p -> (Circle) p).toList();
+
+        //score
+        ingamescore.setText("Score: " + ingamescorecounter);
+        ingamescore.relocate(10, 10);
+        ingamescore.toFront();
+
+        //highscore
+        highscore.setText("Highscore: " + highscorecounter);
+        highscore.relocate(200, 10);
+        highscore.toFront();
+
+        gamePane.getChildren().addAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
         //adding fix and random platforms in the pane
         gamePane.getChildren().addAll(fixPlatforms);
         gamePane.getChildren().addAll(randomPlatforms);
-
         // create scene
         map.setScene(playScene);
+
     }
 
     private void play() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
@@ -188,23 +220,11 @@ public class main_class extends Application {
             map.close();
         });
         //Güler
-
-
         //Musik
-        /*Media Sound = new Media(Paths.get("mine-diamonds-karaoke.wav").toURI().toString());
-        MediaPlayer mediaPlayer = new MediaPlayer(Sound);
-        mediaPlayer.play();*/
-
-        //playMusic("mine-diamonds-karaoke.wav",0);
-        /*AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("C:\\Users\\furka\\IdeaProjects\\Doodle_Jumper\\src\\main\\resources\\mine-diamonds-karaoke.wav"));
-        Clip clip = AudioSystem.getClip();
-        clip.open(audioInputStream);
-        //if (number == 0) {
-            clip.loop(Clip.LOOP_CONTINUOUSLY);
-        //}
-        clip.start();*/
-
-
+        if (!dead && !executed) {
+            playMusic("src/main/resources/main-theme.aiff");
+            musicplaying = true;
+        }
         //Animation
         AnimationTimer timer = new AnimationTimer() {
             @Override
@@ -213,25 +233,59 @@ public class main_class extends Application {
                 //yVel += gravity;
                 if (y > 700) {
                     dead = true;
+                    y = 540;
+                    x = 125;
                 } else dead = false;
                 if (dead) {
-                    //gameover
-                    System.out.println("Gameover");
+                    ingamescorecounter = 0;
+                    gameover();
+                    map.close();
+                    this.stop();
+                    dead = false;
+                    gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                    gamePane.getChildren().removeAll(fixPlatforms);
+                    gamePane.getChildren().removeAll(randomPlatforms);
                 }
                 x += xVel;
                 y += yVel;
+                if (player.getBoundsInParent().intersects(blackhole.getBoundsInParent())) {
+                    ingamescorecounter = 0;
+                    gameover();
+                    map.close();
+                    this.stop();
+                    dead = false;
+                    gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                    gamePane.getChildren().removeAll(fixPlatforms);
+                    gamePane.getChildren().removeAll(randomPlatforms);
+                }
+                if (musicplaying) {
+                    gainControl.setValue((float) slider.getValue());
+                }
+                ingamescore.setText("Score: " + ingamescorecounter);
+                if (ingamescorecounter > highscorecounter) {
+                    highscorecounter = ingamescorecounter;
+                    highscore.setText("Highscore: " + highscorecounter);
+                }
                 player.relocate(x, y);
                 if (jumping) {
+                    blackhole.setLayoutY(blackhole.getLayoutY() + Math.abs(yVel));
+                    if (blackhole.getCenterY() + blackhole.getRadius() + blackhole.getLayoutY() > playScene.getHeight()) {
+                        blackholecounter++;
+                        if (blackholecounter >= jumpingtime * 2) {
+                            blackholecounter = 0;
+                            blackhole.relocate(new Random().nextInt(-225, 325) + 325, -500);
+                        }
+                    }
                     for (Platform fplatform : fixPlatforms) {
-                        fplatform.setLayoutY((fplatform.getLayoutY() + 2.5));
+                        fplatform.setLayoutY((fplatform.getLayoutY() + Math.abs(yVel)));
                         if (fplatform.getyPos() + fplatform.getLayoutY() > playScene.getHeight()) {
                             //fplatform.setVisible(false);
                             //fplatform.setyPos(500);
-                            fplatform.relocate(0, -200);
+                            fplatform.relocate(new Random().nextInt(-200, 100) + 100, -500);
                         }
                     }
                     for (OPPlatform rplatform : randomPlatforms) {
-                        rplatform.setLayoutY((rplatform.getLayoutY() + 2.5));
+                        rplatform.setLayoutY((rplatform.getLayoutY() + Math.abs(yVel)));
                         /*
                         * if (xPosFix < 350) {
                             xPos = randomPos.nextInt(621 - xPosFix - 100 + 1) + xPosFix + 100; //random xPos from xPosFix + 100 to 621
@@ -248,7 +302,7 @@ public class main_class extends Application {
                             } else {
                                 xPosforRandom = randomPos.nextInt(xPosFixForRandom - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
                             }*/
-                            rplatform.relocate(0, -200);
+                            rplatform.relocate(new Random().nextInt(-200, 0), -500);
                             //randomPlatforms.add(new OPPlatform((int) ninjanormal.getX() + 200, (int) (ninjanormal.getY() + 200), 80, 20, 1));
                         }
                     }
@@ -267,17 +321,15 @@ public class main_class extends Application {
         playScene.setOnKeyPressed(e -> {
             switch (e.getCode()) {
                 case A -> {
-                    xVel = -2.5;
+                    xVel = -2;
                 }
                 case D -> {
-                    xVel = 2.5;
+                    xVel = 2;
                 }
                 case W -> {
-                    if (!executed) {
-                        executed = true;
-                        jumpingpoint = y;
-                        yVel = -2.5;
-                    }
+                    new Thread(new thread()).start();
+                    yVel = -2;
+                    ingamescorecounter += Math.abs(yVel);
                     jumping = true;
                 }
             }
@@ -292,21 +344,84 @@ public class main_class extends Application {
                     xVel = 0;
                 }
                 case W -> {
-                    if (jumpingpoint <= y) {
-                        yVel = 0;
-                    } else {
-                        yVel = 2.5;
-                    }
-                    //yVel = Math.min(jumpingpoint - y[0], 0);
-                    executed = false;
+                    //yVel = 0;
+                    yVel = 2;
                     jumping = false;
                 }
             }
         });
     }
 
+    public static class thread implements Runnable {
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(jumpingtime);
+                yVel = 2;
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public static void main(String[] args) {
         launch(args);
+    }
+
+    private void gameover() {
+        Stage stage = new Stage();
+        stage.setTitle("Gameover");
+        //basic alignment
+        VBox gameover = new VBox();
+        gameover.setAlignment(Pos.CENTER);
+        gameover.setPadding(new Insets(-200, 0, 0, 0));
+        gameover.setSpacing(200);
+
+        //main menu button + style + setOnMouseClicked
+        Button retmainmenu = new Button("Main Menü");
+        retmainmenu.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 24px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 200px; " + "-fx-pref-height: 60px; " + "-fx-background-radius: 30; " + "-fx-border-radius: 30; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 2px; " + "-fx-cursor: hand;");
+        gameover.getChildren().addAll(retmainmenu);
+        retmainmenu.setOnMouseClicked(e -> {
+            Stage stage1 = new Stage();
+            try {
+                clip.stop();
+                ingamescorecounter = 0;
+                gamePane.getChildren().removeAll(fixPlatforms);
+                gamePane.getChildren().removeAll(randomPlatforms);
+                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                pause = false;
+                start(stage1);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            stage.close();
+        });
+
+        //try again Button + style + setOnMouseClicked
+        Button tryAgain = new Button("Try again");
+        tryAgain.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 24px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 120px; " + "-fx-pref-height: 60px; " + "-fx-background-radius: 30; " + "-fx-border-radius: 30; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 2px; " + "-fx-cursor: hand;");
+        gameover.getChildren().addAll(tryAgain);
+        tryAgain.setOnMouseClicked(e -> {
+            try {
+                ingamescorecounter = 0;
+                gamePane.getChildren().removeAll(fixPlatforms);
+                gamePane.getChildren().removeAll(randomPlatforms);
+                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                pause = false;
+                play();
+            } catch (UnsupportedAudioFileException ex) {
+                throw new RuntimeException(ex);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            } catch (LineUnavailableException ex) {
+                throw new RuntimeException(ex);
+            }
+            stage.close();
+        });
+
+        Scene gameoverMenu = new Scene(gameover, 700, 700);
+        stage.setScene(gameoverMenu);
+        stage.show();
     }
 
     private void ingamemenu() {
@@ -317,7 +432,7 @@ public class main_class extends Application {
         VBox menu = new VBox();
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(-200, 0, 0, 0));
-        menu.setSpacing(200);
+        menu.setSpacing(150);
 
         //main menu button + style + setOnMouseClicked
         Button retmainmenu = new Button("Main Menü");
@@ -326,7 +441,11 @@ public class main_class extends Application {
         retmainmenu.setOnMouseClicked(e -> {
             Stage stage1 = new Stage();
             try {
-                gamePane.getChildren().removeAll();
+                clip.stop();
+                ingamescorecounter = 0;
+                gamePane.getChildren().removeAll(fixPlatforms);
+                gamePane.getChildren().removeAll(randomPlatforms);
+                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
                 pause = false;
                 start(stage1);
             } catch (IOException ex) {
@@ -341,17 +460,17 @@ public class main_class extends Application {
         menu.getChildren().addAll(resume);
         resume.setOnMouseClicked(e -> {
             try {
+                executed = true;
                 pause = true;
                 play();
-            } catch (UnsupportedAudioFileException ex) {
-                throw new RuntimeException(ex);
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            } catch (LineUnavailableException ex) {
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
                 throw new RuntimeException(ex);
             }
             stage.close();
         });
+
+        //Musikregler
+        menu.getChildren().add(slider);
 
         Scene mainMenu = new Scene(menu, 700, 700);
         stage.setScene(mainMenu);
@@ -359,13 +478,12 @@ public class main_class extends Application {
     }
 
     private void checkCollisions() {
+
         for (Platform platform : fixPlatforms) {
-            if (collisionChecker(platform)) jumping = false;
-            break;
+            if (collisionChecker(platform)) jumping = false;break;
         }
         for (Platform randomPlatform : randomPlatforms) {
-            if (collisionChecker(randomPlatform)) jumping = false;
-            break;
+            if (collisionChecker(randomPlatform))jumping = false;break;
         }
         y += gravity;
     }
@@ -379,23 +497,23 @@ public class main_class extends Application {
         return false;
     }
 
-    public static void playMusic(String file, int number) {
+    public void playMusic(String file) {
         try {
-            File musicPath = new File(file);
-
-            if (musicPath.exists()) {
-                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(musicPath);
-                Clip clip = AudioSystem.getClip();
-                clip.open(audioInputStream);
-                if (number == 0) {
-                    clip.loop(Clip.LOOP_CONTINUOUSLY);
-                }
+            File musicpath = new File(file);
+            if (musicpath.exists()) {
+                AudioInputStream audioInput = AudioSystem.getAudioInputStream(musicpath);
+                clip = AudioSystem.getClip();
+                clip.open(audioInput);
                 clip.start();
-                //musicClip = clip;
+                clip.loop(Clip.LOOP_CONTINUOUSLY);
+                gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                gainControl.setValue((float) slider.getValue());
+
+            } else {
+                System.out.println("No music you stupid n");
             }
         } catch (Exception e) {
-            System.out.println(e);
+            e.printStackTrace();
         }
     }
-
 }
