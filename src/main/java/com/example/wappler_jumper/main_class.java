@@ -44,9 +44,6 @@ public class main_class extends Application {
     List<OPPlatform> randomPlatforms = new ArrayList<>();
     List<Platform> fixPlatforms = new ArrayList<>();
     Scene playScene = new Scene(gamePane, 700, 700);
-    //Bilder
-    Image ninjaN = new Image("ninja_jumper_normal.png");
-    ImageView ninjanormal = new ImageView(ninjaN);
     int x = 125;
     int y = 540;
     private double xVel = 0;
@@ -65,13 +62,14 @@ public class main_class extends Application {
     TextField ingamescore = new TextField();
     TextField highscore = new TextField();
     Clip clip;
-    Slider slider = new Slider(0, 6.0206, 3);
+    Slider slider = new Slider(-80, 6.0206, 4);
     FloatControl gainControl;
     boolean musicplaying;
     private boolean executed = false;
     private Circle blackhole;
     private int blackholecounter = 0;
-
+    private Timeline timeline;
+    private Label enemy = new Label();
     //Güler
 
     @Override
@@ -121,14 +119,24 @@ public class main_class extends Application {
     }
 
     private void initGame() {
-        gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+        gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
         gamePane.getChildren().removeAll(fixPlatforms);
         gamePane.getChildren().removeAll(randomPlatforms);
+        fixPlatforms.clear();
+        randomPlatforms.clear();
 
         map.setTitle("Ninja-Jumper");
 
         //Player
+        Image ninjaN = new Image("ninja_jumper_normal.png");
+        ImageView ninjanormal = new ImageView(ninjaN);
         player.setGraphic(ninjanormal);
+
+        //Gegner
+        Image gegnerg = new Image("gegner.png");
+        ImageView gegner = new ImageView(gegnerg);
+        enemy.setGraphic(gegner);
+        enemy.relocate(new Random().nextInt(0, 700), 500);
 
         //In-game Menü
         //pause = false;
@@ -175,9 +183,11 @@ public class main_class extends Application {
             newPlatform.move();
             randomPlatforms.add(newPlatform);
         }
+        if (timeline != null) {
+            timeline.stop();
+        }
 
-
-        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(16), event -> {
+        timeline = new Timeline(new KeyFrame(Duration.millis(16), event -> {
             // Update the platforms by calling the move method
             for (OPPlatform movingPlatform : randomPlatforms) {
                 movingPlatform.move();
@@ -187,7 +197,8 @@ public class main_class extends Application {
         timeline.play();
 
         //Hindernis (schwarzes loch)
-        blackhole = new Circle(200, 400, 15, Color.BLACK);
+        blackhole = new Circle(0, 400, 15, Color.BLACK);
+        //blackhole.setCenterX(new Random().nextInt((int) (0 + blackhole.getRadius()), (int) (700 - blackhole.getRadius())) + 700 - blackhole.getRadius());
         //List<Circle> circles = gamePane.getChildren().stream().filter(p -> p instanceof Circle).map(p -> (Circle) p).toList();
 
         //score
@@ -200,13 +211,12 @@ public class main_class extends Application {
         highscore.relocate(200, 10);
         highscore.toFront();
 
-        gamePane.getChildren().addAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+        gamePane.getChildren().addAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
         //adding fix and random platforms in the pane
         gamePane.getChildren().addAll(fixPlatforms);
         gamePane.getChildren().addAll(randomPlatforms);
         // create scene
         map.setScene(playScene);
-
     }
 
     private void play() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
@@ -223,8 +233,16 @@ public class main_class extends Application {
         //Musik
         if (!dead && !executed) {
             playMusic("src/main/resources/main-theme.aiff");
+            gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            gainControl.setValue((float) slider.getValue());
             musicplaying = true;
         }
+        slider.setOnMouseDragged(e -> {
+            gainControl.setValue((float) slider.getValue());
+        });
+        slider.setOnMouseClicked(e -> {
+            gainControl.setValue((float) slider.getValue());
+        });
         //Animation
         AnimationTimer timer = new AnimationTimer() {
             @Override
@@ -242,7 +260,7 @@ public class main_class extends Application {
                     map.close();
                     this.stop();
                     dead = false;
-                    gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                    gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                     gamePane.getChildren().removeAll(fixPlatforms);
                     gamePane.getChildren().removeAll(randomPlatforms);
                 }
@@ -254,12 +272,9 @@ public class main_class extends Application {
                     map.close();
                     this.stop();
                     dead = false;
-                    gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                    gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                     gamePane.getChildren().removeAll(fixPlatforms);
                     gamePane.getChildren().removeAll(randomPlatforms);
-                }
-                if (musicplaying) {
-                    gainControl.setValue((float) slider.getValue());
                 }
                 ingamescore.setText("Score: " + ingamescorecounter);
                 if (ingamescorecounter > highscorecounter) {
@@ -273,15 +288,21 @@ public class main_class extends Application {
                         blackholecounter++;
                         if (blackholecounter >= jumpingtime * 2) {
                             blackholecounter = 0;
-                            blackhole.relocate(new Random().nextInt(-225, 325) + 325, -500);
+                            int random = new Random().nextInt(-225, 325);
+                            if (!checkCollisionsplatforms(blackhole)) {
+                                blackhole.relocate(random, -500);
+                            } else
+                                blackhole.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
                         }
                     }
                     for (Platform fplatform : fixPlatforms) {
                         fplatform.setLayoutY((fplatform.getLayoutY() + Math.abs(yVel)));
                         if (fplatform.getyPos() + fplatform.getLayoutY() > playScene.getHeight()) {
-                            //fplatform.setVisible(false);
-                            //fplatform.setyPos(500);
-                            fplatform.relocate(new Random().nextInt(-200, 100) + 100, -500);
+                            int random = new Random().nextInt(-200, 100);
+                            if (!checkCollisionsplatforms(fplatform)) {
+                                fplatform.relocate(random, -500);
+                            } else
+                                fplatform.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
                         }
                     }
                     for (OPPlatform rplatform : randomPlatforms) {
@@ -302,7 +323,11 @@ public class main_class extends Application {
                             } else {
                                 xPosforRandom = randomPos.nextInt(xPosFixForRandom - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
                             }*/
-                            rplatform.relocate(new Random().nextInt(-200, 0), -500);
+                            int random = new Random().nextInt(-200, 0);
+                            if (!checkCollisionsplatforms(rplatform)) {
+                                rplatform.relocate(random, -500);
+                            } else
+                                rplatform.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
                             //randomPlatforms.add(new OPPlatform((int) ninjanormal.getX() + 200, (int) (ninjanormal.getY() + 200), 80, 20, 1));
                         }
                     }
@@ -388,7 +413,7 @@ public class main_class extends Application {
                 ingamescorecounter = 0;
                 gamePane.getChildren().removeAll(fixPlatforms);
                 gamePane.getChildren().removeAll(randomPlatforms);
-                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                 pause = false;
                 start(stage1);
             } catch (IOException ex) {
@@ -398,15 +423,15 @@ public class main_class extends Application {
         });
 
         //try again Button + style + setOnMouseClicked
-        Button tryAgain = new Button("Try again");
-        tryAgain.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 24px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 120px; " + "-fx-pref-height: 60px; " + "-fx-background-radius: 30; " + "-fx-border-radius: 30; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 2px; " + "-fx-cursor: hand;");
-        gameover.getChildren().addAll(tryAgain);
-        tryAgain.setOnMouseClicked(e -> {
+        Button playAgain = new Button("Play again");
+        playAgain.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 24px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 120px; " + "-fx-pref-height: 60px; " + "-fx-background-radius: 30; " + "-fx-border-radius: 30; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 2px; " + "-fx-cursor: hand;");
+        gameover.getChildren().addAll(playAgain);
+        playAgain.setOnMouseClicked(e -> {
             try {
                 ingamescorecounter = 0;
                 gamePane.getChildren().removeAll(fixPlatforms);
                 gamePane.getChildren().removeAll(randomPlatforms);
-                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                 pause = false;
                 play();
             } catch (UnsupportedAudioFileException ex) {
@@ -445,7 +470,7 @@ public class main_class extends Application {
                 ingamescorecounter = 0;
                 gamePane.getChildren().removeAll(fixPlatforms);
                 gamePane.getChildren().removeAll(randomPlatforms);
-                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole);
+                gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                 pause = false;
                 start(stage1);
             } catch (IOException ex) {
@@ -480,10 +505,12 @@ public class main_class extends Application {
     private void checkCollisions() {
 
         for (Platform platform : fixPlatforms) {
-            if (collisionChecker(platform)) jumping = false;break;
+            if (collisionChecker(platform)) jumping = false;
+            break;
         }
         for (Platform randomPlatform : randomPlatforms) {
-            if (collisionChecker(randomPlatform))jumping = false;break;
+            if (collisionChecker(randomPlatform)) jumping = false;
+            break;
         }
         y += gravity;
     }
@@ -506,8 +533,8 @@ public class main_class extends Application {
                 clip.open(audioInput);
                 clip.start();
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
-                gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-                gainControl.setValue((float) slider.getValue());
+                //gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                //gainControl.setValue((float) slider.getValue());
 
             } else {
                 System.out.println("No music you stupid n");
@@ -515,5 +542,19 @@ public class main_class extends Application {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean checkCollisionsplatforms(Node node) {
+        for (Platform platform : fixPlatforms) {
+            if (platform.getBoundsInParent().intersects(node.getBoundsInParent())) {
+                return true;
+            }
+        }
+        for (Platform randomPlatform : randomPlatforms) {
+            if (randomPlatform.getBoundsInParent().intersects(node.getBoundsInParent())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
