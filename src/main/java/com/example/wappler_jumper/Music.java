@@ -14,7 +14,6 @@ public class Music {
     private FloatControl gainControl;
 
     public Music(){
-
     }
 
     public Music(Clip clip, Slider slider, FloatControl gainControl) {
@@ -56,8 +55,8 @@ public class Music {
                 clip.open(audioInput);
                 clip.start();
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
-                FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-                gainControl.setValue((float) slider.getValue());
+                //gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                //gainControl.setValue((float) slider.getValue());
 
             } else {
                 System.out.println("No music you stupid n");

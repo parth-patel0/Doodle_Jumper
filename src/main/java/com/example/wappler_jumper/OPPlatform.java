@@ -1,11 +1,5 @@
 package com.example.wappler_jumper;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
-import javafx.scene.shape.Rectangle;
-import javafx.util.Duration;
-
 public class OPPlatform extends Platform {
 
     private int v;

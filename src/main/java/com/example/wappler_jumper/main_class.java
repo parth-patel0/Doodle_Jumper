@@ -1,10 +1,9 @@
 package com.example.wappler_jumper;
 
-import javafx.animation.Animation;
-import javafx.animation.AnimationTimer;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.animation.*;
 import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -13,42 +12,34 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
-import javax.print.attribute.standard.Media;
 import javax.sound.sampled.*;
 /*import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;*/
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
 
 public class main_class extends Application {
-    //Güler
     Pane gamePane = new Pane();
     List<OPPlatform> randomPlatforms = new ArrayList<>();
     List<Platform> fixPlatforms = new ArrayList<>();
+    List<breakPlatforms> breakPlatforms = new ArrayList<>();
     Scene playScene = new Scene(gamePane, 700, 700);
-    int x = 125;
-    int y = 540;
+    double x = 150;
+    double y = 590;
     private double xVel = 0;
     private static double yVel = 0;
-    private double gravity = 1;
     private boolean jumping;
     private boolean dead = false;
     private boolean pause = false;
@@ -56,11 +47,16 @@ public class main_class extends Application {
     private final Label player = new Label();
     private final Button einstellungsmenu = new Button("Pause");
     private final HBox score = new HBox();
-    private static final long jumpingtime = 250;
+    private static final long jumpingtime = 500;
+    //private int gravity = 1;
     private double ingamescorecounter;
     private double highscorecounter = 0;
     TextField ingamescore = new TextField();
     TextField highscore = new TextField();
+    private int gravity = 1;
+    //HighScore highScore = new HighScore();
+
+    //Music
     Clip clip;
     Slider slider = new Slider(-80, 6.0206, 4);
     FloatControl gainControl;
@@ -69,8 +65,15 @@ public class main_class extends Application {
     private Circle blackhole;
     private int blackholecounter = 0;
     private Timeline timeline;
-    private Label enemy = new Label();
-    //Güler
+    private final Label enemy = new Label();
+    private int enemycounter = 0;
+    TranslateTransition transition;
+    private boolean onPLatform = false;
+    private boolean onbreakplatform = false;
+    private int brekaplatformindex;
+    int breakduration = 3;
+    int coundown = breakduration;
+    private static boolean falling = true;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -102,11 +105,7 @@ public class main_class extends Application {
             //startGame(); --> first version with several panes
             try {
                 play();
-            } catch (UnsupportedAudioFileException e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (LineUnavailableException e) {
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
                 throw new RuntimeException(e);
             }
         });
@@ -119,12 +118,16 @@ public class main_class extends Application {
     }
 
     private void initGame() {
+        //clearing everything
         gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
         gamePane.getChildren().removeAll(fixPlatforms);
         gamePane.getChildren().removeAll(randomPlatforms);
+        gamePane.getChildren().removeAll(breakPlatforms);
         fixPlatforms.clear();
         randomPlatforms.clear();
+        breakPlatforms.clear();
 
+        //setting the title
         map.setTitle("Ninja-Jumper");
 
         //Player
@@ -132,14 +135,28 @@ public class main_class extends Application {
         ImageView ninjanormal = new ImageView(ninjaN);
         player.setGraphic(ninjanormal);
 
-        //Gegner
+        //enemy
         Image gegnerg = new Image("gegner.png");
         ImageView gegner = new ImageView(gegnerg);
         enemy.setGraphic(gegner);
-        enemy.relocate(new Random().nextInt(0, 700), 500);
+        enemy.relocate(0, 700);
+        transition = new TranslateTransition(Duration.seconds(2), enemy);
+        transition.setToX(playScene.getWidth() - 64/*image witdh*/);
+        transition.setInterpolator(Interpolator.LINEAR);
+        transition.play();
+        transition.setOnFinished(e -> {
+            if (enemy.getTranslateX() == 0) {
+                transition.stop();
+                transition.setToX(playScene.getWidth() - 64/*image witdh*/);
+                transition.play();
+            } else {
+                transition.stop();
+                transition.setToX(0);
+                transition.play();
+            }
+        });
 
         //In-game Menü
-        //pause = false;
         einstellungsmenu.setStyle("-fx-background-color: #000000; " + "-fx-text-fill: #FFFFFF; " + "-fx-font-size: 12px; " + "-fx-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; " + "-fx-pref-width: 60px; " + "-fx-pref-height: 30px; " + "-fx-background-radius: 15; " + "-fx-border-radius: 15; " + "-fx-border-color: #FFFFFF; " + "-fx-border-width: 1px; " + "-fx-cursor: hand;");
         einstellungsmenu.relocate(630, 20);
 
@@ -158,8 +175,8 @@ public class main_class extends Application {
         fixPlatforms.add(fixP3);
         Platform fixP4 = new Platform(136, 280, 80, 20);
         fixPlatforms.add(fixP4);
-        Platform fixP5 = new Platform(330, 170, 80, 20);
-        fixPlatforms.add(fixP5);
+        //Platform fixP5 = new Platform(330, 170, 80, 20);
+        //fixPlatforms.add(fixP5);
 
         //creating random Number for the xPos of the platform
         Random randomPos = new Random();
@@ -186,7 +203,6 @@ public class main_class extends Application {
         if (timeline != null) {
             timeline.stop();
         }
-
         timeline = new Timeline(new KeyFrame(Duration.millis(16), event -> {
             // Update the platforms by calling the move method
             for (OPPlatform movingPlatform : randomPlatforms) {
@@ -196,9 +212,15 @@ public class main_class extends Application {
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
 
-        //Hindernis (schwarzes loch)
+        //breakplatforms
+        breakPlatforms bp1 = new breakPlatforms(330, 170, 80, 40, breakduration);
+        breakPlatforms.add(bp1);
+        breakPlatforms bp2 = new breakPlatforms(570, 290, 80, 40, breakduration);
+        breakPlatforms.add(bp2);
+
+        //Hindernis (blackhole)
         blackhole = new Circle(0, 400, 15, Color.BLACK);
-        //blackhole.setCenterX(new Random().nextInt((int) (0 + blackhole.getRadius()), (int) (700 - blackhole.getRadius())) + 700 - blackhole.getRadius());
+        blackhole.setCenterX(new Random().nextInt((int) (0 + blackhole.getRadius()), (int) (700 - blackhole.getRadius())) + 700 - blackhole.getRadius());
         //List<Circle> circles = gamePane.getChildren().stream().filter(p -> p instanceof Circle).map(p -> (Circle) p).toList();
 
         //score
@@ -211,25 +233,30 @@ public class main_class extends Application {
         highscore.relocate(200, 10);
         highscore.toFront();
 
+        //addind to the gamepane
         gamePane.getChildren().addAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
+
         //adding fix and random platforms in the pane
         gamePane.getChildren().addAll(fixPlatforms);
         gamePane.getChildren().addAll(randomPlatforms);
+        gamePane.getChildren().addAll(breakPlatforms);
+
         // create scene
         map.setScene(playScene);
     }
 
     private void play() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
-        //Güler
+        //initializing the game
         if (!pause) {
             initGame();
         }
+
         //In-game Menü
         einstellungsmenu.setOnMouseClicked(e -> {
             ingamemenu();
             map.close();
         });
-        //Güler
+
         //Musik
         if (!dead && !executed) {
             playMusic("src/main/resources/main-theme.aiff");
@@ -243,12 +270,16 @@ public class main_class extends Application {
         slider.setOnMouseClicked(e -> {
             gainControl.setValue((float) slider.getValue());
         });
+
         //Animation
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long l) {
                 update();
                 //yVel += gravity;
+                x += xVel;
+                y += yVel;
+                player.relocate(x, y);
                 if (y > 700) {
                     dead = true;
                     y = 540;
@@ -264,8 +295,8 @@ public class main_class extends Application {
                     gamePane.getChildren().removeAll(fixPlatforms);
                     gamePane.getChildren().removeAll(randomPlatforms);
                 }
-                x += xVel;
-                y += yVel;
+
+                //collision blackhole
                 if (player.getBoundsInParent().intersects(blackhole.getBoundsInParent())) {
                     ingamescorecounter = 0;
                     gameover();
@@ -276,33 +307,80 @@ public class main_class extends Application {
                     gamePane.getChildren().removeAll(fixPlatforms);
                     gamePane.getChildren().removeAll(randomPlatforms);
                 }
+
+                //collision platfo
+
+
+                //collision enemy
+                if (player.getBoundsInParent().intersects(enemy.getBoundsInParent())) {
+                    ingamescorecounter = 0;
+                    gameover();
+                    map.close();
+                    this.stop();
+                    dead = false;
+                    gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
+                    gamePane.getChildren().removeAll(fixPlatforms);
+                    gamePane.getChildren().removeAll(randomPlatforms);
+                }
+
+                //score + highscore
                 ingamescore.setText("Score: " + ingamescorecounter);
                 if (ingamescorecounter > highscorecounter) {
                     highscorecounter = ingamescorecounter;
                     highscore.setText("Highscore: " + highscorecounter);
                 }
-                player.relocate(x, y);
-                if (jumping) {
+                if (onbreakplatform) {
+                    coundown--;
+                    if (coundown == 0) {
+                        breakPlatforms.get(brekaplatformindex).setVisible(false);
+                        onbreakplatform = false;
+                        coundown = breakduration;
+                    }
+                }
+
+                //moving everything down
+                if (jumping && !falling) {
+                    enemy.setLayoutY(enemy.getLayoutY() + Math.abs(yVel));
+                    if (enemy.getScaleY() + enemy.getLayoutY() > playScene.getHeight()) {
+                        enemycounter++;
+                        if (enemycounter >= jumpingtime * 3) {
+                            enemycounter = 0;
+                            double random = new Random().nextDouble(0.5, 5);
+                            transition.setDuration(Duration.seconds((int) random));
+                            enemy.relocate(0, -400);
+                        }
+                    }
+
                     blackhole.setLayoutY(blackhole.getLayoutY() + Math.abs(yVel));
                     if (blackhole.getCenterY() + blackhole.getRadius() + blackhole.getLayoutY() > playScene.getHeight()) {
                         blackholecounter++;
                         if (blackholecounter >= jumpingtime * 2) {
                             blackholecounter = 0;
                             int random = new Random().nextInt(-225, 325);
-                            if (!checkCollisionsplatforms(blackhole)) {
+                            if (checkCollisionsplatforms(blackhole)) {
                                 blackhole.relocate(random, -500);
                             } else
                                 blackhole.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
                         }
                     }
+
                     for (Platform fplatform : fixPlatforms) {
                         fplatform.setLayoutY((fplatform.getLayoutY() + Math.abs(yVel)));
                         if (fplatform.getyPos() + fplatform.getLayoutY() > playScene.getHeight()) {
                             int random = new Random().nextInt(-200, 100);
-                            if (!checkCollisionsplatforms(fplatform)) {
+                            if (checkCollisionsplatforms(fplatform)) {
                                 fplatform.relocate(random, -500);
+                            } else fplatform.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
+                        }
+                    }
+                    for (Platform bplatform : breakPlatforms) {
+                        bplatform.setLayoutY(bplatform.getLayoutY() + Math.abs(yVel));
+                        if (bplatform.getyPos() + bplatform.getLayoutY() > playScene.getHeight()) {
+                            int random = new Random().nextInt(-200, 0);
+                            if (checkCollisionsplatforms(bplatform)) {
+                                bplatform.relocate(random, -500);
                             } else
-                                fplatform.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
+                                bplatform.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
                         }
                     }
                     for (OPPlatform rplatform : randomPlatforms) {
@@ -324,7 +402,7 @@ public class main_class extends Application {
                                 xPosforRandom = randomPos.nextInt(xPosFixForRandom - 50 - 100 + 1) + 50; //random xPos - 100 from 50 to xPosFix
                             }*/
                             int random = new Random().nextInt(-200, 0);
-                            if (!checkCollisionsplatforms(rplatform)) {
+                            if (checkCollisionsplatforms(rplatform)) {
                                 rplatform.relocate(random, -500);
                             } else
                                 rplatform.relocate(random + 80 + 10/*witdh of the platform*/, -500 - 20 - 10/*height of the platform*/);
@@ -342,7 +420,6 @@ public class main_class extends Application {
 
     private void update() {
         checkCollisions();
-
         playScene.setOnKeyPressed(e -> {
             switch (e.getCode()) {
                 case A -> {
@@ -352,24 +429,23 @@ public class main_class extends Application {
                     xVel = 2;
                 }
                 case W -> {
+                    onPLatform = false;
                     new Thread(new thread()).start();
                     yVel = -2;
                     ingamescorecounter += Math.abs(yVel);
                     jumping = true;
+                    falling = false;
                 }
             }
         });
 
         playScene.setOnKeyReleased(e -> {
             switch (e.getCode()) {
-                case A -> {
-                    xVel = 0;
-                }
-                case D -> {
+                case A, D -> {
                     xVel = 0;
                 }
                 case W -> {
-                    //yVel = 0;
+                    onPLatform = false;
                     yVel = 2;
                     jumping = false;
                 }
@@ -382,6 +458,7 @@ public class main_class extends Application {
         public void run() {
             try {
                 Thread.sleep(jumpingtime);
+                falling = true;
                 yVel = 2;
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -413,6 +490,7 @@ public class main_class extends Application {
                 ingamescorecounter = 0;
                 gamePane.getChildren().removeAll(fixPlatforms);
                 gamePane.getChildren().removeAll(randomPlatforms);
+                gamePane.getChildren().removeAll(breakPlatforms);
                 gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                 pause = false;
                 start(stage1);
@@ -431,14 +509,11 @@ public class main_class extends Application {
                 ingamescorecounter = 0;
                 gamePane.getChildren().removeAll(fixPlatforms);
                 gamePane.getChildren().removeAll(randomPlatforms);
+                gamePane.getChildren().removeAll(breakPlatforms);
                 gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                 pause = false;
                 play();
-            } catch (UnsupportedAudioFileException ex) {
-                throw new RuntimeException(ex);
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            } catch (LineUnavailableException ex) {
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
                 throw new RuntimeException(ex);
             }
             stage.close();
@@ -470,6 +545,7 @@ public class main_class extends Application {
                 ingamescorecounter = 0;
                 gamePane.getChildren().removeAll(fixPlatforms);
                 gamePane.getChildren().removeAll(randomPlatforms);
+                gamePane.getChildren().removeAll(breakPlatforms);
                 gamePane.getChildren().removeAll(score, player, einstellungsmenu, ingamescore, highscore, blackhole, enemy);
                 pause = false;
                 start(stage1);
@@ -502,28 +578,6 @@ public class main_class extends Application {
         stage.show();
     }
 
-    private void checkCollisions() {
-
-        for (Platform platform : fixPlatforms) {
-            if (collisionChecker(platform)) jumping = false;
-            break;
-        }
-        for (Platform randomPlatform : randomPlatforms) {
-            if (collisionChecker(randomPlatform)) jumping = false;
-            break;
-        }
-        y += gravity;
-    }
-
-    private boolean collisionChecker(Platform platform) {
-        if ((x > platform.getxPos() - 29 && x < platform.getxPos() + 80) && (y + 45 > platform.getyPos() && y + 45 < platform.getyPos() + 20)) {
-            y = platform.getyPos() - 46;
-            yVel = 0;
-            return true;
-        }
-        return false;
-    }
-
     public void playMusic(String file) {
         try {
             File musicpath = new File(file);
@@ -544,151 +598,72 @@ public class main_class extends Application {
         }
     }
 
+    private void checkCollisions() {
+        List<Platform> rects = gamePane.getChildren().stream().filter(p -> p instanceof Platform).map(p -> (Platform) p).toList();
+        for (Platform rect : rects) {
+            if (collisionChecker(rect)) {
+                jumping = false;
+                //System.out.println("collision");
+                break;
+            }
+        }
+        y += 0.5;
+    }
+
+    private boolean collisionChecker(Platform platform) {
+        if ((x > platform.getxPos() - player.getWidth() + platform.getLayoutX() && x < platform.getxPos() + platform.getLen() + platform.getLayoutX()) && (y + player.getHeight() > platform.getyPos() + platform.getLayoutY() && y + player.getHeight() < platform.getyPos() + platform.getHeigt() + platform.getLayoutY())) {
+            y = (int) (platform.getyPos() - player.getHeight() + platform.getLayoutY()) - 1;
+            yVel = 0;
+            return true;
+        }
+        return false;
+    }
+
+    private boolean collisionChecker(OPPlatform platform) {
+        /*if ((x > platform.getxPos() - 29 && x < platform.getxPos() + 80) && (y + 45 > platform.getyPos() && y + 45 < platform.getyPos() + 20)) {
+            y = platform.getyPos() - 46;
+            yVel = 0;
+            return true;
+        }
+        return false;*/
+        if (!onPLatform) {
+            if (player.getBoundsInParent().intersects(platform.getBoundsInParent())) {
+                yVel = 0;
+                gravity = 0;
+                onPLatform = true;
+                //y = platform.getyPos();
+                return true;
+            }
+        }
+        //y += gravity;
+        return false;
+    }
+
+    /**
+     * collision for n hole
+     *
+     * @param node is the n hole
+     * @return a boolean val
+     */
     private boolean checkCollisionsplatforms(Node node) {
-        for (Platform platform : fixPlatforms) {
+        for (Node platform : fixPlatforms) {
             if (platform.getBoundsInParent().intersects(node.getBoundsInParent())) {
                 return true;
             }
         }
-        for (Platform randomPlatform : randomPlatforms) {
+        for (Node randomPlatform : randomPlatforms) {
             if (randomPlatform.getBoundsInParent().intersects(node.getBoundsInParent())) {
+                return true;
+            }
+        }
+        for (int i = 0; i < breakPlatforms.size(); i++) {
+            Node breakPlatform = breakPlatforms.get(i);
+            if (breakPlatform.getBoundsInParent().intersects(node.getBoundsInParent())) {
+                onbreakplatform = true;
+                brekaplatformindex = i;
                 return true;
             }
         }
         return false;
     }
-    /*
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-     */
 }
